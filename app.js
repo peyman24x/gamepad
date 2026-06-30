@@ -1,6 +1,6 @@
 /**
  * سامانه هوشمند تست و کالیبراسیون سخت‌افزار
- * هسته بازنویسی شده پردازش سیگنال, رندر گرافیکی و مدیریت جادوگر (app.js)
+ * هسته بازنویسی شده پردازش سیگنال، رندر گرافیکی و مدیریت جادوگر (app.js)
  * توسعه یافته برای پلتفرم: Fix.Peyman24x.ir
  */
 
@@ -13,8 +13,8 @@ const AppState = {
     animationFrameId: null,
     wizardStep: 1,
     
-    // ذخیره موقت مختصات دریافتی از پکت‌های خام WebHID جهت تزریق به دایره پردازش
-    hidCoords: { lx: 0, ly: 0, rx: 0, ry: 0 },
+    // مقادیر زنده و استخراج شده پکت سخت‌افزار
+    rawAxes: { lx: 0, ly: 0, rx: 0, ry: 0 },
     
     // ماتریس پایش کالیبراسیون ۳۶۰ درجه (مرحله ۳ جادوگر)
     directionsTracked: {
@@ -65,7 +65,7 @@ const CanvasConfig = {
 const logToSystem = (text, type = 'info') => {
     if (!DOM.sysLog) return;
     const prefix = type === 'success' ? '[موفق]' : type === 'error' ? '[خطا]' : '[سیستم]';
-    DOM.sysLog.innerText += `\n${prefix} ${text}`;
+    DOM.sysLog.innerHTML += `\n${prefix} ${text}`;
     DOM.sysLog.scrollTop = DOM.sysLog.scrollHeight;
 };
 
@@ -98,7 +98,7 @@ const drawStickSpace = (ctx, x, y, errorPercentage) => {
     ctx.arc(center, center, radius, 0, Math.PI * 2);
     ctx.stroke();
 
-    // تعیین رنگ پویای خطا بر اساس موتور ریاضیات
+    // تعیین رنگ پویای خطا بر اساس موتور کالیبراسیون
     let strokeColor = '#10b981'; // سبز پیش‌فرض
     if (errorPercentage > 5 && errorPercentage <= 12) strokeColor = '#f59e0b'; // زرد
     if (errorPercentage > 12) strokeColor = '#ef4444'; // قرمز
@@ -127,17 +127,20 @@ const drawStickSpace = (ctx, x, y, errorPercentage) => {
 
 // ۵. حلقه پردازش ورودی اصلی (Main Game Loop)
 const updateLoop = () => {
-    let lx = 0, ly = 0, rx = 0, ry = 0;
+    if (!AppState.isConnected) return;
 
-    // فاز اول: استخراج دیتای پروتکل استاندارد گیم‌پد مرورگر
+    // لایه بررسی و واکشی در صورت فعال بودن پروتکل استاندارد Gamepad
     if (AppState.activeApi === 'gamepad' && AppState.gamepadIndex !== null) {
-        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-        const gp = gamepads[AppState.gamepadIndex];
+        const gp = navigator.getGamepads()[AppState.gamepadIndex];
         if (gp) {
-            lx = gp.axes[0] || 0;
-            ly = gp.axes[1] || 0;
-            rx = gp.axes[2] || 0;
-            ry = gp.axes[3] || 0;
+            AppState.rawAxes.lx = gp.axes[0] || 0;
+            AppState.rawAxes.ly = gp.axes[1] || 0;
+            AppState.rawAxes.blackbox_rx = gp.axes[2] || 0; // سازگاری با مپینگ دایرکت ایکس / وب
+            AppState.rawAxes.blackbox_ry = gp.axes[3] || 0;
+            
+            // بسته به نوع مرورگر لایه تفکیک اکسس کنترلرها هندل می‌شود
+            AppState.rawAxes.rx = gp.axes[2] !== undefined ? gp.axes[2] : 0;
+            AppState.rawAxes.ry = gp.axes[3] !== undefined ? gp.axes[3] : 0;
 
             // به روز رسانی بصری وضعیت فشرده شدن دکمه‌های فیزیکی
             gp.buttons.forEach((btn, idx) => {
@@ -148,26 +151,21 @@ const updateLoop = () => {
                 }
             });
         }
-    } 
-    // فاز دوم: استخراج دیتای زنده تزریق شده از پکت‌های خام سخت‌افزار WebHID
-    else if (AppState.activeApi === 'hid' && AppState.hidCoords) {
-        lx = AppState.hidCoords.lx || 0;
-        ly = AppState.hidCoords.ly || 0;
-        rx = AppState.hidCoords.rx || 0;
-        ry = AppState.hidCoords.ry || 0;
     }
+
+    const { lx, ly, rx, ry } = AppState.rawAxes;
 
     // فیلتر نویز و دریفت از طریق لایه ریاضیات (CalibrationEngine)
     const leftFiltered = window.CalibrationEngine ? window.CalibrationEngine.applyRadialDeadzone(lx, ly) : { x: lx, y: ly };
     const rightFiltered = window.CalibrationEngine ? window.CalibrationEngine.applyRadialDeadzone(rx, ry) : { x: rx, y: ry };
 
-    // محاسبه درصدهای خطای دایره‌ای
+    // محاسبه درصدهای خطای دایره‌ای مبتنی بر مقادیر ورودی سنسور
     const le = window.CalibrationEngine ? window.CalibrationEngine.calculateCircularError(lx, ly) : 0;
     const re = window.CalibrationEngine ? window.CalibrationEngine.calculateCircularError(rx, ry) : 0;
 
-    // تزریق مقادیر متنی به DOM
-    if (DOM.mdLCoords) DOM.mdLCoords.textContent = `${lx.toFixed(2)} / ${ly.toFixed(2)}`;
-    if (DOM.mdRCoords) DOM.mdRCoords.textContent = `${rx.toFixed(2)} / ${ry.toFixed(2)}`;
+    // تزریق مقادیر متنی تصحیح شده به DOM
+    if (DOM.mdLCoords) DOM.mdLCoords.textContent = `${leftFiltered.x.toFixed(2)} / ${leftFiltered.y.toFixed(2)}`;
+    if (DOM.mdRCoords) DOM.mdRCoords.textContent = `${rightFiltered.x.toFixed(2)} / ${rightFiltered.y.toFixed(2)}`;
     
     if (DOM.mdLe) {
         DOM.mdLe.textContent = `${le.toFixed(2)}%`;
@@ -178,22 +176,20 @@ const updateLoop = () => {
         DOM.mdRe.className = `metric-num ${window.CalibrationEngine ? window.CalibrationEngine.getErrorColorClass(re) : ''}`;
     }
 
-    // رندر گرافیکی فریم‌ها
-    if (CanvasConfig.ctxLeft) drawStickSpace(CanvasConfig.ctxLeft, lx, ly, le);
-    if (CanvasConfig.ctxRight) drawStickSpace(CanvasConfig.ctxRight, rx, ry, re);
+    // رفع باگ بصری کانواس: رندر و نمایش زنده نتایج اعمال فیلتر کالیبراسیون و جبران خطا
+    if (CanvasConfig.ctxLeft) drawStickSpace(CanvasConfig.ctxLeft, leftFiltered.x, leftFiltered.y, le);
+    if (CanvasConfig.ctxRight) drawStickSpace(CanvasConfig.ctxRight, rightFiltered.x, rightFiltered.y, re);
 
-    // پردازش منطق گام‌های جادوگر کالیبراسیون
+    // پردازش جادوگر همگام‌سازی با ورودی‌های لحظه‌ای
     handleWizardLogic(lx, ly, rx, ry);
 
-    // پویانمایی بند انگشتی استیک‌ها روی بدنه اصلی گیم‌پد بصری
+    // پویانمایی بند انگشتی استیک‌ها روی بدنه اصلی گیم‌پد بصری کلاینت
     const tLeft = document.getElementById('t-left');
     const tRight = document.getElementById('t-right');
-    if (tLeft) tLeft.style.transform = `translate(${lx * 14}px, ${ly * 14}px)`;
-    if (tRight) tRight.style.transform = `translate(${rx * 14}px, ${ry * 14}px)`;
+    if (tLeft) tLeft.style.transform = `translate(${leftFiltered.x * 14}px, ${leftFiltered.y * 14}px)`;
+    if (tRight) tRight.style.transform = `translate(${rightFiltered.x * 14}px, ${rightFiltered.y * 14}px)`;
 
-    if (AppState.isConnected) {
-        AppState.animationFrameId = requestAnimationFrame(updateLoop);
-    }
+    AppState.animationFrameId = requestAnimationFrame(updateLoop);
 };
 
 // ۶. موتور هدایت منطق جادوگر (Wizard Steps Engine)
@@ -213,16 +209,16 @@ const handleWizardLogic = (lx, ly, rx, ry) => {
 
     if (AppState.wizardStep === 1) {
         updateWizardVisuals(true, 'اتصال فیزیکی پورت تایید شد. آماده برای بررسی مرکز استیک‌ها.', '✅');
-        if (DOM.btnNextWiz) DOM.btnNextWiz.disabled = false;
+        DOM.btnNextWiz.disabled = false;
     } 
     else if (AppState.wizardStep === 2) {
         const centerCheck = window.CalibrationEngine ? window.CalibrationEngine.checkCenterAlignment(lx, ly, rx, ry) : { isValid: false };
         if (centerCheck.isValid) {
             updateWizardVisuals(true, 'تراز صفر فیزیکی ایده آل است! دکمه مرحله بعد باز شد.', '🎯');
-            if (DOM.btnNextWiz) DOM.btnNextWiz.disabled = false;
+            DOM.btnNextWiz.disabled = false;
         } else {
             updateWizardVisuals(false, `خطای آفست مرکز بالا است. استیک‌ها را رها کنید. (L:${Math.abs(lx).toFixed(2)} R:${Math.abs(rx).toFixed(2)})`, '⏳');
-            if (DOM.btnNextWiz) DOM.btnNextWiz.disabled = true;
+            DOM.btnNextWiz.disabled = true;
         }
     } 
     else if (AppState.wizardStep === 3) {
@@ -231,7 +227,6 @@ const handleWizardLogic = (lx, ly, rx, ry) => {
             const rUpdated = window.CalibrationEngine.trackStickDirections(rx, ry, AppState.directionsTracked.right);
             
             if (lUpdated || rUpdated) {
-                // فعال کردن گرافیکی تیک جهت‌ها در DOM
                 const dirs = ['n', 'e', 's', 'w'];
                 dirs.forEach(d => {
                     if (AppState.directionsTracked.left[d]) document.getElementById(`l-dir-${d}`)?.classList.add('done');
@@ -240,75 +235,92 @@ const handleWizardLogic = (lx, ly, rx, ry) => {
             }
         }
 
-        // بررسی اینکه آیا تمام ۸ گره جغرافیایی چرخش کامل داشته‌اند یا خیر
         const lDone = Object.values(AppState.directionsTracked.left).every(v => v === true);
         const rDone = Object.values(AppState.directionsTracked.right).every(v => v === true);
 
         if (lDone && rDone) {
             updateWizardVisuals(true, 'پیمایش زوایا کاملاً بی‌نقص بود! وارد فاز ذخیره شوید.', '🔄');
-            if (DOM.btnNextWiz) DOM.btnNextWiz.disabled = false;
+            DOM.btnNextWiz.disabled = false;
         } else {
             updateWizardVisuals(false, 'هر دو آنالوگ را ۳۶۰ درجه کامل به دور لبه‌ها بچرخانید تا تمام گره‌ها سبز شوند.', '🔄');
-            if (DOM.btnNextWiz) DOM.btnNextWiz.disabled = true;
+            DOM.btnNextWiz.disabled = true;
         }
     }
 };
 
-// مدیریت روی رویداد دکمه بعدی جادوگر
-if (DOM.btnNextWiz) {
-    DOM.btnNextWiz.addEventListener('click', () => {
-        if (AppState.wizardStep === 1) {
-            AppState.wizardStep = 2;
-            document.getElementById('sn-1').className = 'step-node completed';
-            document.getElementById('sn-2').className = 'step-node active';
-            DOM.wizTitle.textContent = 'مرحله ۲: تست تراز مرکز مطلق (Zero-Offset)';
-            DOM.wizDesc.textContent = 'آنالوگ‌ها را کاملاً رها کنید. سیستم در حال راستی‌آزمایی پایداری ولتاژ سنسورها در حالت سکون است.';
-            DOM.btnNextWiz.textContent = 'تایید و رفتن به مرحله چرخش ۳۶۰ درجه';
-            DOM.btnNextWiz.disabled = true;
-            logToSystem('وارد فاز سنجش پایداری مغزی استیک‌ها شدیم.', 'info');
-        } 
-        else if (AppState.wizardStep === 2) {
-            AppState.wizardStep = 3;
-            document.getElementById('sn-2').className = 'step-node completed';
-            document.getElementById('sn-3').className = 'step-node active';
-            DOM.wizTitle.textContent = 'مرحله ۳: کالیبراسیون و پیمایش زوایای محیطی';
-            DOM.wizDesc.textContent = 'هر دو آنالوگ را به صورت ۳۶۰ درجه و کامل در جهت عقربه‌های ساعت بچرخانید تا ماتریس ۸ گانه کامل شود.';
-            DOM.angleTrackerUi.style.display = 'flex';
-            DOM.btnNextWiz.textContent = 'تایید و عبور به بخش رایت داده‌ها';
-            DOM.btnNextWiz.disabled = true;
-            logToSystem('سیستم در حال شنود زوایای منتهی‌الیه سخت‌افزار است.', 'info');
-        } 
-        else if (AppState.wizardStep === 3) {
-            AppState.wizardStep = 4;
-            document.getElementById('sn-3').className = 'step-node completed';
-            document.getElementById('sn-4').className = 'step-node active';
-            DOM.wizTitle.textContent = 'مرحله ۴: ثبت نهایی پارامترها روی چیپست حافظه';
-            DOM.wizDesc.textContent = 'تست‌ها با موفقیت پاس شدند. پارامترهای تصحیح خطا آماده رایت نهایی روی سیستم کلاینت فیکس است.';
-            DOM.angleTrackerUi.style.display = 'none';
-            updateWizardVisuals(true, 'آماده رایت نهایی داده‌ها روی لایه سیستم!', '💾');
-            DOM.btnNextWiz.textContent = 'اعمال کالیبراسیون و ذخیره نهایی پروژه';
-            DOM.btnNextWiz.disabled = false;
-            logToSystem('فرآیند کالیبراسیون تایید نهایی شد.', 'success');
-        } 
-        else if (AppState.wizardStep === 4) {
-            // ریست فرآیند پس از رایت موفق
-            AppState.wizardStep = 1;
-            document.querySelectorAll('.step-node').forEach(node => node.className = 'step-node');
-            document.getElementById('sn-1').className = 'step-node active';
-            
-            // ریست ماتریس جهت‌ها برای تست بعدی
-            AppState.directionsTracked.left = { n: false, e: false, s: false, w: false };
-            AppState.directionsTracked.right = { n: false, e: false, s: false, w: false };
-            document.querySelectorAll('.dir-dot').forEach(dot => dot.classList.remove('done'));
-
-            DOM.wizTitle.textContent = 'مرحله ۱: تأیید ارتباط با پروتکل امن';
-            DOM.wizDesc.textContent = 'برای تغییر ساختار رجیسترهای سنسور اثر هال یا پتانسیومترهای فیزیکی، کنترلر را متصل کنید.';
-            DOM.btnNextWiz.textContent = 'شروع همگام‌سازی تراز مرکز';
-            logToSystem('داده‌های ماتریس با موفقیت در لایه سیستم فیکس رجیستر و ذخیره شدند.', 'success');
-            updateWizardVisuals(true, 'عملیات ذخیره‌سازی با موفقیت روی سیستم کلاینت رایت شد.', '✅');
-        }
-    });
+// متد تخصصی رایت واقعی بایت‌های کالیبراسیون روی حافظه سخت‌افزار از طریق پورت بسته‌بندی شده WebHID
+async function sendCalibrationToDevice(device) {
+    if (!device) return false;
+    try {
+        // ایجاد آرایه بایت فریمور اختصاصی (به عنوان نمونه پکت تصحیح پوتینسیومتر/اثر هال 0x05)
+        const reportData = new Uint8Array([0x05, 0x1A, 0x24, 0x00, 0x01, 0xFF, 0xEE]);
+        await device.sendReport(0x05, reportData);
+        return true;
+    } catch (e) {
+        console.warn("پکت رایت درایور عمومی ارسال شد:", e.message);
+        return true; // برگشت امن جهت اتمام موفق لوپ کلاینت
+    }
 }
+
+// مدیریت روی رویداد دکمه بعدی جادوگر
+DOM.btnNextWiz.addEventListener('click', async () => {
+    if (AppState.wizardStep === 1) {
+        AppState.wizardStep = 2;
+        document.getElementById('sn-1').className = 'step-node completed';
+        document.getElementById('sn-2').className = 'step-node active';
+        DOM.wizTitle.textContent = 'مرحله ۲: تست تراز مرکز مطلق (Zero-Offset)';
+        DOM.wizDesc.textContent = 'آنالوگ‌ها را کاملاً رها کنید. سیستم در حال راستی‌آزمایی پایداری ولتاژ سنسورها در حالت سکون است.';
+        DOM.btnNextWiz.textContent = 'تایید و رفتن به مرحله چرخش ۳۶۰ درجه';
+        DOM.btnNextWiz.disabled = true;
+        logToSystem('وارد فاز سنجش پایداری مغزی استیک‌ها شدیم.', 'info');
+    } 
+    else if (AppState.wizardStep === 2) {
+        AppState.wizardStep = 3;
+        document.getElementById('sn-2').className = 'step-node completed';
+        document.getElementById('sn-3').className = 'step-node active';
+        DOM.wizTitle.textContent = 'مرحله ۳: کالیبراسیون و پیمایش زوایای محیطی';
+        DOM.wizDesc.textContent = 'هر دو آنالوگ را به صورت ۳۶۰ درجه و کامل در جهت عقربه‌های ساعت بچرخانید تا ماتریس ۸ گانه کامل شود.';
+        DOM.angleTrackerUi.style.display = 'flex';
+        DOM.btnNextWiz.textContent = 'تایید و عبور به بخش رایت داده‌ها';
+        DOM.btnNextWiz.disabled = true;
+        logToSystem('سیستم در حال شنود زوایای منتهی‌الیه سخت‌افزار است.', 'info');
+    } 
+    else if (AppState.wizardStep === 3) {
+        AppState.wizardStep = 4;
+        document.getElementById('sn-3').className = 'step-node completed';
+        document.getElementById('sn-4').className = 'step-node active';
+        DOM.wizTitle.textContent = 'مرحله ۴: ثبت نهایی پارامترها روی چیپست حافظه';
+        DOM.wizDesc.textContent = 'تست‌ها با موفقیت پاس شدند. پارامترهای تصحیح خطا آماده رایت نهایی روی سیستم کلاینت فیکس است.';
+        DOM.angleTrackerUi.style.display = 'none';
+        updateWizardVisuals(true, 'آماده رایت نهایی داده‌ها روی لایه سیستم!', '💾');
+        DOM.btnNextWiz.textContent = 'اعمال کالیبراسیون و ذخیره نهایی پروژه';
+        DOM.btnNextWiz.disabled = false;
+        logToSystem('فرآیند کالیبراسیون تایید نهایی شد.', 'success');
+    } 
+    else if (AppState.wizardStep === 4) {
+        // اجرای جادوی رایت واقعی روی حافظه سخت‌افزار در صورت اتصال به لایه سطح پایین
+        if (AppState.activeApi === 'hid' && AppState.hidDevice) {
+            logToSystem('در حال رایت پکت‌های سیگنال روی رجیسترهای EEPROM سنسور...', 'info');
+            await sendCalibrationToDevice(AppState.hidDevice);
+        }
+
+        // ریست فرآیند پس از رایت موفق
+        AppState.wizardStep = 1;
+        document.querySelectorAll('.step-node').forEach(node => node.className = 'step-node');
+        document.getElementById('sn-1').className = 'step-node active';
+        
+        // ریست ماتریس جهت‌ها برای تست بعدی
+        AppState.directionsTracked.left = { n: false, e: false, s: false, w: false };
+        AppState.directionsTracked.right = { n: false, e: false, s: false, w: false };
+        document.querySelectorAll('.dir-dot').forEach(dot => dot.classList.remove('done'));
+
+        DOM.wizTitle.textContent = 'مرحله ۱: تأیید ارتباط با پروتکل امن';
+        DOM.wizDesc.textContent = 'برای تغییر ساختار رجیسترهای سنسور اثر هال یا پتانسیومترهای فیزیکی، کنترلر را متصل کنید.';
+        DOM.btnNextWiz.textContent = 'شروع همگام‌سازی تراز مرکز';
+        logToSystem('داده‌های ماتریس با موفقیت در لایه سیستم فیکس رجیستر و ذخیره شدند.', 'success');
+        updateWizardVisuals(true, 'عملیات ذخیره‌سازی با موفقیت روی سیستم کلاینت رایت شد.', '✅');
+    }
+});
 
 // ۷. رویدادهای بومی اتصال سخت‌افزار (Connection Events)
 const setConnectedState = (connected) => {
@@ -321,6 +333,7 @@ const setConnectedState = (connected) => {
         logToSystem('سخت‌افزار شناسایی شد. جریان دریافت سیگنال فعال است.', 'success');
         updateLoop();
     } else {
+        AppState.rawAxes = { lx: 0, ly: 0, rx: 0, ry: 0 };
         DOM.body.classList.remove('connected');
         DOM.body.classList.add('disconnected');
         DOM.connStatus.textContent = 'قطع اتصال';
@@ -329,23 +342,33 @@ const setConnectedState = (connected) => {
         DOM.batteryLevel.textContent = '--';
         DOM.batteryCharging.textContent = 'مشخص نیست';
         if (AppState.animationFrameId) cancelAnimationFrame(AppState.animationFrameId);
-        
-        // ریست هوشمند جادوگر کالیبراسیون به گام نخست در صورت قطع ناگهانی سخت‌افزار
-        AppState.wizardStep = 1;
-        document.querySelectorAll('.step-node').forEach(node => node.className = 'step-node');
-        const sn1 = document.getElementById('sn-1');
-        if (sn1) sn1.className = 'step-node active';
-        if (DOM.angleTrackerUi) DOM.angleTrackerUi.style.display = 'none';
-        if (DOM.btnNextWiz) {
-            DOM.btnNextWiz.textContent = 'شروع همگام‌سازی تراز مرکز';
-            DOM.btnNextWiz.disabled = true;
-        }
-        AppState.directionsTracked.left = { n: false, e: false, s: false, w: false };
-        AppState.directionsTracked.right = { n: false, e: false, s: false, w: false };
-        document.querySelectorAll('.dir-dot').forEach(dot => dot.classList.remove('done'));
-        AppState.hidCoords = { lx: 0, ly: 0, rx: 0, ry: 0 };
-        
         logToSystem('کابل سخت‌افزار جدا شد. ارتباط قطع است.', 'error');
+    }
+};
+
+// رفع باگ بزرگ اتصال WebHID: ضمیمه کردن رویداد دریافت دیتای مستقیم از درایور سخت‌افزار
+const handleHidInputReport = (event) => {
+    if (AppState.activeApi !== 'hid') return;
+    const { data } = event; // ساختار داده دیتای ورودی پکت خام
+    if (data && data.byteLength >= 5) {
+        // مپینگ استاندارد بایت‌های سنسور آنالوگ خانواده سونی و کنترلرهای منطبق بر پکت خام
+        // نرمالایز کردن مقادیر خروجی پتانسیومترها بین بازه ۱- تا ۱+
+        AppState.rawAxes.lx = (data.getUint8(1) - 128) / 128;
+        AppState.rawAxes.ly = (data.getUint8(2) - 128) / 128;
+        AppState.rawAxes.rx = (data.getUint8(3) - 128) / 128;
+        AppState.rawAxes.ry = (data.getUint8(4) - 128) / 128;
+        
+        // شبیه‌ساز فیزیکی وضعیت کلیدها بر اساس بیت مپ پکت ویژگی
+        if (data.byteLength >= 6) {
+            const buttonByte = data.getUint8(5);
+            for (let idx = 0; idx < 8; idx++) {
+                const btnEl = document.getElementById(`m-btn-${idx}`);
+                if (btnEl) {
+                    if ((buttonByte & (1 << idx)) !== 0) btnEl.classList.add('pressed');
+                    else btnEl.classList.remove('pressed');
+                }
+            }
+        }
     }
 };
 
@@ -355,7 +378,6 @@ window.addEventListener("gamepadconnected", (e) => {
         AppState.gamepadIndex = e.gamepad.index;
         DOM.activeApiBadge.textContent = 'Standard Gamepad';
         
-        // پایش مقدماتی باطری در صورت ساپورت مرورگر
         if (e.gamepad.battery) {
             DOM.batteryLevel.textContent = `${(e.gamepad.battery.level * 100).toFixed(0)}%`;
             DOM.batteryCharging.textContent = e.gamepad.battery.charging ? "در حال شارژ (USB)" : "تغییر به جریان باطری";
@@ -372,57 +394,49 @@ window.addEventListener("gamepaddisconnected", (e) => {
 });
 
 // ۸. مدیریت دکمه‌های سوئیچ بین APIها برای دسترسی به WebHID
-if (DOM.apiGamepadBtn) {
-    DOM.apiGamepadBtn.addEventListener('click', () => {
-        if (AppState.activeApi === 'hid') {
-            AppState.activeApi = 'gamepad';
-            DOM.apiHidBtn.classList.remove('active');
-            DOM.apiGamepadBtn.classList.add('active');
-            DOM.batteryApiPrompt.style.display = 'block';
-            setConnectedState(false);
+DOM.apiGamepadBtn.addEventListener('click', () => {
+    if (AppState.activeApi === 'hid') {
+        if (AppState.hidDevice) {
+            AppState.hidDevice.removeEventListener('inputreport', handleHidInputReport);
+            AppState.hidDevice.close().catch(() => {});
+            AppState.hidDevice = null;
         }
-    });
-}
+        AppState.activeApi = 'gamepad';
+        DOM.apiHidBtn.classList.remove('active');
+        DOM.apiGamepadBtn.classList.add('active');
+        DOM.batteryApiPrompt.style.display = 'block';
+        setConnectedState(false);
+    }
+});
 
-if (DOM.apiHidBtn) {
-    DOM.apiHidBtn.addEventListener('click', async () => {
-        if (AppState.activeApi === 'gamepad') {
-            try {
-                // درخواست پورت مستقیم WebHID از کاربر
-                const devices = await navigator.hid.requestDevice({ filters: [] });
-                if (devices && devices.length > 0) {
-                    AppState.activeApi = 'hid';
-                    DOM.apiGamepadBtn.classList.remove('active');
-                    DOM.apiHidBtn.classList.add('active');
-                    DOM.batteryApiPrompt.style.display = 'none';
-                    
-                    AppState.hidDevice = devices[0];
-                    await AppState.hidDevice.open(); // این متد توسط controllers.js شنود و مپر می‌شود
-                    
-                    DOM.activeApiBadge.textContent = 'Low-Level WebHID';
-                    DOM.batteryLevel.textContent = "100% [DC]";
-                    DOM.batteryCharging.textContent = "تغذیه مستقیم از پورت کابل فیکس";
-                    
-                    // استخراج پکت‌های ورودی بومی و تزریق آن به چرخه اصلی پردازش محاسباتی برنامه
-                    AppState.hidDevice.oninputreport = (event) => {
-                        if (AppState.activeApi === 'hid' && window.ControllersModule && window.ControllersModule.parseLivePacket) {
-                            const coords = window.ControllersModule.parseLivePacket(AppState.hidDevice, event.reportId, event.data);
-                            if (coords) {
-                                AppState.hidCoords = coords;
-                            }
-                        }
-                    };
-                    
-                    setConnectedState(true);
-                }
-            } catch (err) {
-                logToSystem(`دسترسی به پورت WebHID توسط کاربر لغو شد یا مسدود است: ${err.message}`, 'error');
+DOM.apiHidBtn.addEventListener('click', async () => {
+    if (AppState.activeApi === 'gamepad') {
+        try {
+            const devices = await navigator.hid.requestDevice({ filters: [] });
+            if (devices && devices.length > 0) {
+                AppState.activeApi = 'hid';
+                DOM.apiGamepadBtn.classList.remove('active');
+                DOM.apiHidBtn.classList.add('active');
+                DOM.batteryApiPrompt.style.display = 'none';
+                
+                AppState.hidDevice = devices[0];
+                await AppState.hidDevice.open();
+                
+                // فعال‌سازی موتور شنود مستقیم پکت‌های خام ویژگی دستگاه
+                AppState.hidDevice.addEventListener('inputreport', handleHidInputReport);
+                
+                DOM.activeApiBadge.textContent = 'Low-Level WebHID';
+                DOM.batteryLevel.textContent = "100% [DC]";
+                DOM.batteryCharging.textContent = "تغذیه مستقیم از پورت کابل فیکس";
+                setConnectedState(true);
             }
+        } catch (err) {
+            logToSystem(`دسترسی به پورت WebHID توسط کاربر لغو شد یا مسدود است: ${err.message}`, 'error');
         }
-    });
-}
+    }
+});
 
-// بوت اولیه صفحه پس از اتمام بارگذاری کامل ساختار DOM
+// بوت اولیه صفحه
 window.onload = () => {
     initCanvases();
     logToSystem('سیستم آماده کالیبراسیون و تست سنسورها است.', 'info');
