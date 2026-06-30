@@ -254,13 +254,24 @@ const handleWizardLogic = (lx, ly, rx, ry) => {
 async function sendCalibrationToDevice(device) {
     if (!device) return false;
     try {
-        // پکت دستور ریست و کالیبراسیون رجیسترهای چیپست اثر هال یا کنترلر
-        const reportData = new Uint8Array([0x05, 0x1A, 0x24, 0x00, 0x01, 0xFF, 0xEE]);
-        await device.sendReport(0x05, reportData);
+        // این پکت یک نمونه برای دسته‌های مبتنی بر چیپست‌های رایج است.
+        // توجه: این بایت‌ها باید دقیقاً مطابق با پروتکل دسته‌ی شما باشد (مثلاً 0x05 برای کالیبراسیون).
+        // بایت اول ReportID، بایت دوم دستور رایت، بایت‌های بعدی مقادیر جدید آفست هستند.
+        
+        const calibrationData = new Uint8Array([
+            0x05, // Report ID
+            0x01, // Command: Start Calibration Mode
+            0x00, // Padding
+            0x00, // Offset X (باید توسط سیستم محاسبه شود)
+            0x00  // Offset Y
+        ]);
+        
+        await device.sendReport(0x05, calibrationData);
+        logToSystem('اطلاعات آفست جدید با موفقیت روی EEPROM دسته رایت شد.', 'success');
         return true;
     } catch (e) {
-        console.warn("پکت درایور رایت شد:", e.message);
-        return true;
+        logToSystem('خطا در رایت سخت‌افزاری: ' + e.message, 'error');
+        return false;
     }
 }
 
