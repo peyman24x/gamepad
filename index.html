@@ -3,506 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سامانه هوشمند تست و کالیبراسیون | Fix.Peyman24x.ir</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
-        
-        :root {
-            --bg-main: #04060d;
-            --bg-card: #0a0e1a;
-            --bg-inner: #111728;
-            --primary: #3b82f6;
-            --primary-glow: rgba(59, 130, 246, 0.3);
-            --success: #10b981;
-            --success-glow: rgba(16, 185, 129, 0.3);
-            --warning: #f59e0b;
-            --warning-glow: rgba(245, 158, 11, 0.3);
-            --danger: #ef4444;
-            --danger-glow: rgba(239, 68, 68, 0.3);
-            --text-white: #f8fafc;
-            --text-dim: #475569;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.05);
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Vazirmatn', sans-serif;
-            user-select: none;
-        }
-
-        body {
-            background-color: var(--bg-main);
-            color: var(--text-white);
-            min-height: 100vh;
-            padding-bottom: 60px;
-            overflow-x: hidden;
-        }
-
-        header {
-            background: rgba(10, 14, 26, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            padding: 16px 40px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-        }
-
-        .header-title h1 {
-            font-size: 20px;
-            font-weight: 900;
-            background: linear-gradient(135deg, #ffffff, #93c5fd);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .header-brand a {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--primary);
-            text-decoration: none;
-            padding: 6px 14px;
-            border-radius: 8px;
-            background: rgba(59, 130, 246, 0.08);
-            border: 1px solid rgba(59, 130, 246, 0.15);
-            transition: all 0.3s ease;
-        }
-
-        .header-brand a:hover {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 0 20px var(--primary);
-        }
-
-        .app-layout {
-            max-width: 1500px;
-            margin: 25px auto;
-            padding: 0 20px;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 25px;
-        }
-
-        @media (min-width: 1200px) {
-            .app-layout {
-                grid-template-columns: 360px 1fr;
-            }
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            position: relative;
-        }
-
-        body.disconnected .device-dependent {
-            opacity: 0.35;
-            pointer-events: none;
-            filter: grayscale(0.8);
-            transition: all 0.4s ease;
-        }
-
-        .card-title {
-            font-size: 15px;
-            font-weight: 700;
-            margin-bottom: 20px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .api-toggle-container {
-            background: var(--bg-inner);
-            border-radius: 10px;
-            padding: 4px;
-            display: flex;
-            gap: 4px;
-            margin-bottom: 15px;
-            border: 1px solid var(--border);
-        }
-
-        .api-btn {
-            flex: 1;
-            padding: 10px;
-            border-radius: 8px;
-            background: transparent;
-            border: none;
-            color: var(--text-muted);
-            font-weight: bold;
-            font-size: 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .api-btn.active {
-            background: var(--primary);
-            color: white;
-            box-shadow: 0 4px 12px var(--primary-glow);
-        }
-
-        /* بخش هوشمند اعلام نیاز به کالیبراسیون و پروتکل متقابل */
-        .api-prompt-box {
-            background: rgba(245, 158, 11, 0.06);
-            border: 1px dashed rgba(245, 158, 11, 0.3);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 12px;
-            color: var(--warning);
-            margin-top: 10px;
-            display: none;
-            line-height: 1.6;
-        }
-
-        .gamepad-illustration-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            background: var(--bg-inner);
-            border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.01);
-        }
-
-        .gamepad-container {
-            position: relative;
-            width: 460px;
-            height: 290px;
-            background: #141b2b;
-            border-radius: 60px 60px 90px 90px;
-            border: 2px solid #202a42;
-            box-shadow: inset 0 8px 16px rgba(255,255,255,0.02), 0 15px 40px rgba(0,0,0,0.5);
-        }
-
-        .gamepad-container::before, .gamepad-container::after {
-            content: '';
-            position: absolute;
-            bottom: -20px;
-            width: 90px;
-            height: 150px;
-            background: #141b2b;
-            border: 2px solid #202a42;
-            z-index: -1;
-        }
-        .gamepad-container::before { left: -6px; border-radius: 50px 0 40px 90px; transform: rotate(13deg); }
-        .gamepad-container::after { right: -6px; border-radius: 0 50px 90px 40px; transform: rotate(-13deg); }
-
-        .g-btn {
-            position: absolute;
-            background: #202b47;
-            border: 1px solid #31426d;
-            color: var(--text-muted);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 10px;
-            font-weight: bold;
-        }
-
-        .g-btn.active {
-            background: var(--success) !important;
-            color: white !important;
-            box-shadow: 0 0 12px var(--success-glow);
-            border-color: #10b981 !important;
-        }
-
-        .cluster-right { position: absolute; right: 50px; top: 70px; width: 90px; height: 90px; }
-        .b-triangle { top: 0; left: 32px; width: 26px; height: 26px; }
-        .b-circle { top: 32px; right: 0; width: 26px; height: 26px; }
-        .b-cross { bottom: 0; left: 32px; width: 26px; height: 26px; }
-        .b-square { top: 32px; left: 0; width: 26px; height: 26px; }
-
-        .cluster-left { position: absolute; left: 50px; top: 70px; width: 90px; height: 90px; }
-        .d-up { top: 0; left: 32px; width: 26px; height: 26px; border-radius: 4px; }
-        .d-right { top: 32px; right: 0; width: 26px; height: 26px; border-radius: 4px; }
-        .d-down { bottom: 0; left: 32px; width: 26px; height: 26px; border-radius: 4px; }
-        .d-left { top: 32px; left: 0; width: 26px; height: 26px; border-radius: 4px; }
-
-        .g-stick {
-            position: absolute;
-            width: 60px;
-            height: 60px;
-            background: #0d121f;
-            border-radius: 50%;
-            border: 2px solid #283556;
-            top: 150px;
-        }
-        .g-stick-left { left: 130px; }
-        .g-stick-right { right: 130px; }
-        
-        .g-thumb {
-            position: absolute;
-            width: 38px;
-            height: 38px;
-            background: #28365a;
-            border-radius: 50%;
-            top: 9px;
-            left: 9px;
-            border: 1px solid #3a4e82;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-        }
-
-        .shoulder-btn {
-            position: absolute;
-            top: -12px;
-            width: 90px;
-            height: 20px;
-            background: #202b47;
-            border-radius: 6px 6px 3px 3px;
-            border: 1px solid #31426d;
-        }
-        .s-l1 { left: 60px; }
-        .s-r1 { right: 60px; }
-
-        .b-ps { left: 215px; top: 175px; width: 30px; height: 30px; font-size: 8px; }
-        .b-share { left: 150px; top: 75px; width: 30px; height: 15px; border-radius: 2px; font-size: 8px; }
-        .b-options { right: 150px; top: 75px; width: 30px; height: 15px; border-radius: 2px; font-size: 8px; }
-
-        /* 🔄 رفع باگ چیدمان افقی: آنالوگ راست در راست و آنالوگ چپ در چپ صفحه */
-        .sticks-dashboard {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            margin-top: 20px;
-        }
-        @media (min-width: 768px) {
-            .sticks-dashboard {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
-        .canvas-container {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            background: var(--bg-inner);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.01);
-        }
-
-        .canvas-frame {
-            position: relative;
-            width: 190px;
-            height: 190px;
-            background: #060912;
-            border-radius: 50%;
-            border: 1px solid rgba(255,255,255,0.03);
-            margin-bottom: 12px;
-        }
-        canvas { width: 100%; height: 100%; }
-
-        .metric-row {
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-        .metric-item {
-            background: rgba(0,0,0,0.2);
-            padding: 8px;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 11px;
-        }
-        .metric-num {
-            font-family: monospace;
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--primary);
-            margin-top: 4px;
-        }
-
-        /* کامپوننت هوشمند جادوگر خودکار */
-        .wizard-container {
-            border-right: 4px solid var(--warning);
-            background: linear-gradient(145deg, var(--bg-card), #121727);
-        }
-
-        .wizard-steps-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            border-bottom: 1px solid var(--border);
-            padding-bottom: 12px;
-        }
-        .step-node {
-            flex: 1;
-            text-align: center;
-            opacity: 0.25;
-            font-size: 12px;
-            transition: all 0.3s;
-        }
-        .step-node.active { opacity: 1; color: var(--warning); font-weight: bold; }
-        .step-node.completed { opacity: 0.8; color: var(--success); }
-        
-        .step-badge {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.06);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 6px;
-            font-weight: bold;
-        }
-        .step-node.active .step-badge { background: var(--warning); color: #000; }
-        .step-node.completed .step-badge { background: var(--success); color: white; }
-
-        .wizard-body {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            background: rgba(0,0,0,0.25);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-        }
-        @media (min-width: 768px) {
-            .wizard-body { grid-template-columns: 1fr 280px; }
-        }
-
-        .wizard-graphic-feedback {
-            min-height: 150px;
-            background: #060911;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.02);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 12px;
-        }
-
-        /* 🎯 لایه راهنمای جهات چرخشی برای رفع باگ مرحله ۳ */
-        .angle-tracker-ui {
-            width: 100%;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        .tracker-stick-box {
-            background: rgba(255,255,255,0.02);
-            padding: 6px;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 11px;
-        }
-        .direction-indicators {
-            display: flex;
-            justify-content: center;
-            gap: 6px;
-            margin-top: 6px;
-        }
-        .dir-dot {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            background: rgba(255,255,255,0.05);
-            color: var(--text-muted);
-            font-size: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            border: 1px solid rgba(255,255,255,0.02);
-        }
-        .dir-dot.done {
-            background: rgba(16, 185, 129, 0.15);
-            color: var(--success);
-            border-color: var(--success);
-        }
-
-        .validation-status {
-            margin-top: 8px;
-            font-size: 11px;
-            font-weight: bold;
-            text-align: center;
-        }
-
-        .terminal-box {
-            background: #020307;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 12px;
-            font-family: monospace;
-            font-size: 11px;
-            height: 100px;
-            overflow-y: auto;
-            color: #38bdf8;
-            margin-top: 15px;
-        }
-
-        .btn-action {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-action:hover { opacity: 0.95; }
-        .btn-wiz-next { background: var(--warning); color: #000; }
-        .btn-wiz-next:disabled {
-            opacity: 0.35 !important;
-            cursor: not-allowed;
-            background: #2d3748 !important;
-            color: var(--text-muted) !important;
-            box-shadow: none !important;
-        }
-
-        .correctness-indicator {
-            width: 48px;
-            height: 48px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        .correctness-indicator.waiting { background: rgba(245, 158, 11, 0.08); color: var(--warning); border: 2px dashed var(--warning); }
-        .correctness-indicator.success { background: rgba(16, 185, 129, 0.08); color: var(--success); border: 2px solid var(--success); box-shadow: 0 0 12px var(--success-glow); }
-        .correctness-indicator.error { background: rgba(239, 68, 68, 0.08); color: var(--danger); border: 2px solid var(--danger); }
-    </style>
+    <title>سامانه هوشمند تست و کالیبراسیون سخت‌افزار | Fix.Peyman24x.ir</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body class="disconnected">
 
-    <header>
+    <header class="main-header">
         <div class="header-title">
             <h1>سامانه هوشمند تست و کالیبراسیون سخت‌افزار</h1>
         </div>
         <div class="header-brand">
-            <a href="https://Fix.Peyman24x.ir" target="_blank">Fix.Peyman24x.ir</a>
+            <a href="https://Fix.Peyman24x.ir" target="_blank" rel="noopener noreferrer">Fix.Peyman24x.ir</a>
         </div>
     </header>
 
-    <div class="app-layout">
+    <main class="app-layout">
         
-        <div style="display: flex; flex-direction: column; gap: 25px;">
-            <div class="card">
+        <section class="sidebar-column">
+            
+            <div class="card protocol-card">
                 <div class="card-title">
                     <span>پروتکل ارتباطی سخت‌افزار</span>
-                    <span id="activeApiBadge" style="font-size:10px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.05); color:var(--text-muted);">عدم شناسایی</span>
+                    <span id="activeApiBadge" class="status-badge">عدم شناسایی</span>
                 </div>
                 
                 <div class="api-toggle-container">
@@ -510,18 +33,18 @@
                     <button class="api-btn" id="apiHidBtn">Low-Level WebHID</button>
                 </div>
 
-                <div style="background: rgba(0,0,0,0.2); padding: 14px; border-radius: 8px; font-size: 12px; margin-bottom: 5px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <div class="connection-brief-panel">
+                    <div class="brief-row">
                         <span>وضعیت اتصال:</span>
-                        <span id="connStatus" style="color:var(--danger); font-weight:bold;">قطع اتصال</span>
+                        <span id="connStatus" class="status-text disconnected">قطع اتصال</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <div class="brief-row">
                         <span>میزان شارژ باطری:</span>
-                        <span id="batteryLevel" style="color:var(--text-muted); font-family: monospace; font-weight: bold;">--</span>
+                        <span id="batteryLevel" class="metric-font">--</span>
                     </div>
-                    <div style="display:flex; justify-content:space-between;">
+                    <div class="brief-row">
                         <span>منبع تغذیه الکتریکی:</span>
-                        <span id="batteryCharging" style="color:var(--text-muted);">مشخص نیست</span>
+                        <span id="batteryCharging">مشخص نیست</span>
                     </div>
                 </div>
 
@@ -534,11 +57,44 @@
 [سیستم] برای شروع فرآیند، کنترلر را متصل کرده و دکمه‌ای را فشار دهید.
                 </div>
             </div>
-        </div>
 
-        <div style="display: flex; flex-direction: column; gap: 25px;">
+            <div class="card device-dependent firmware-spec-card">
+                <div class="card-title accent-primary">اطلاعات فریمور و سخت‌افزار متصل</div>
+                
+                <div class="info-section-title">⚙️ مشخصات نرم‌افزاری (Software)</div>
+                <div class="info-grid">
+                    <div class="info-row"><span>FW Build Date</span><span id="fw-build-date">--</span></div>
+                    <div class="info-row"><span>FW Type</span><span id="fw-type">--</span></div>
+                    <div class="info-row"><span>FW Series</span><span id="fw-series">--</span></div>
+                    <div class="info-row"><span>FW Version</span><span id="fw-version">--</span></div>
+                    <div class="info-row"><span>FW Update</span><span id="fw-update">--</span></div>
+                    <div class="info-row"><span>FW Update Info</span><span id="fw-update-info">--</span></div>
+                    <div class="info-row"><span>SBL FW Version</span><span id="sbl-fw-version">--</span></div>
+                    <div class="info-row"><span>Venom FW Version</span><span id="venom-fw-version">--</span></div>
+                    <div class="info-row"><span>Spider FW Version</span><span id="spider-fw-version">--</span></div>
+                    <div class="info-row"><span>Touchpad FW Version</span><span id="touchpad-fw-version">--</span></div>
+                </div>
+
+                <div class="info-section-title accent-success">🛠️ مشخصات سخت‌افزاری (Hardware)</div>
+                <div class="info-grid">
+                    <div class="info-row"><span>Serial Number</span><span id="hw-serial">--</span></div>
+                    <div class="info-row"><span>MCU Unique ID</span><span id="hw-mcu-id">--</span></div>
+                    <div class="info-row"><span>PCBA ID</span><span id="hw-pcba-id">--</span></div>
+                    <div class="info-row"><span>Battery Barcode</span><span id="hw-battery-barcode">--</span></div>
+                    <div class="info-row"><span>VCM Left Barcode</span><span id="hw-vcm-left">--</span></div>
+                    <div class="info-row"><span>VCM Right Barcode</span><span id="hw-vcm-right">--</span></div>
+                    <div class="info-row"><span>Color</span><span id="hw-color">--</span></div>
+                    <div class="info-row"><span>Board Model</span><span id="hw-board-model">--</span></div>
+                    <div class="info-row"><span>HW Model</span><span id="hw-model">--</span></div>
+                    <div class="info-row"><span>Touchpad ID</span><span id="hw-touchpad-id">--</span></div>
+                    <div class="info-row"><span>Bluetooth Address</span><span id="hw-bt-address">--</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="main-column">
             
-            <div class="card device-dependent">
+            <div class="card device-dependent gamepad-visualizer-card">
                 <div class="card-title">نقشه فیزیکی زنده و ماتریس پاسخ سخت‌افزاری</div>
                 
                 <div class="gamepad-illustration-card">
@@ -574,30 +130,28 @@
                 </div>
 
                 <div class="sticks-dashboard">
-                    
                     <div class="canvas-container">
-                        <div style="font-size: 12px; font-weight: bold; margin-bottom: 10px; color: var(--text-muted);">بردار آنالوگ راست (مختصات خطی)</div>
+                        <div class="canvas-label">بردار آنالوگ راست (مختصات خطی)</div>
                         <div class="canvas-frame"><canvas id="cRight"></canvas></div>
                         <div class="metric-row">
                             <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-r-coords">0.00 / 0.00</div></div>
-                            <div class="metric-item">خطای هندسی دایره<div class="metric-num" style="color:var(--success);" id="md-re">0.00%</div></div>
+                            <div class="metric-item">خطای هندسی دایره<div class="metric-num error-green" id="md-re">0.00%</div></div>
                         </div>
                     </div>
 
                     <div class="canvas-container">
-                        <div style="font-size: 12px; font-weight: bold; margin-bottom: 10px; color: var(--text-muted);">بردار آنالوگ چپ (مختصات خطی)</div>
+                        <div class="canvas-label">بردار آنالوگ چپ (مختصات خطی)</div>
                         <div class="canvas-frame"><canvas id="cLeft"></canvas></div>
                         <div class="metric-row">
                             <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-l-coords">0.00 / 0.00</div></div>
-                            <div class="metric-item">خطای هندسی دایره<div class="metric-num" style="color:var(--success);" id="md-le">0.00%</div></div>
+                            <div class="metric-item">خطای هندسی دایره<div class="metric-num error-green" id="md-le">0.00%</div></div>
                         </div>
                     </div>
-
                 </div>
             </div>
 
             <div class="card wizard-container device-dependent">
-                <div class="card-title" style="color: var(--warning);">جادوگر کالیبراسیون و همگام‌سازی رجیسترهای سخت‌افزار</div>
+                <div class="card-title accent-warning">جادوگر کالیبراسیون و همگام‌سازی رجیسترهای سخت‌افزار</div>
                 
                 <div class="wizard-steps-header">
                     <div class="step-node active" id="sn-1"><div class="step-badge">۱</div>اتصال پورت</div>
@@ -607,18 +161,18 @@
                 </div>
 
                 <div class="wizard-body">
-                    <div style="display: flex; flex-direction: column; justify-content: center;">
-                        <h3 id="wizTitle" style="font-size:14px; margin-bottom:8px; color:#fff;">مرحله ۱: تأیید ارتباط با پروتکل امن</h3>
-                        <p id="wizDesc" style="font-size:12px; color:var(--text-muted); line-height:1.7;">
+                    <div class="wizard-text-content">
+                        <h3 id="wizTitle">مرحله ۱: تأیید ارتباط با پروتکل امن</h3>
+                        <p id="wizDesc">
                             برای تغییر ساختار رجیسترهای سنسور اثر هال یا پتانسیومترهای فیزیکی، کنترلر را متصل کنید. در این فاز سیستم در حال راستی‌آزمایی نرخ داده‌های دریافتی جهت اعمال تصحیح ماتریسی است.
                         </p>
                     </div>
                     
-                    <div>
+                    <div class="wizard-status-panel">
                         <div class="wizard-graphic-feedback" id="wizGraphic">
                             <div class="correctness-indicator waiting" id="vIndicator">⏳</div>
                             
-                            <div class="angle-tracker-ui" id="angleTrackerUi" style="display: none;">
+                            <div class="angle-tracker-ui" id="angleTrackerUi">
                                 <div class="tracker-stick-box">
                                     <span>آنالوگ چپ</span>
                                     <div class="direction-indicators">
@@ -638,21 +192,21 @@
                                     </div>
                                 </div>
                             </div>
-
                         </div>
-                        <div class="validation-status" id="vStatus" style="color: var(--warning);">در انتظار شروع عملیات...</div>
+                        <div class="validation-status status-warning" id="vStatus">در انتظار شروع عملیات...</div>
                     </div>
                 </div>
 
-                <div style="display: flex; gap: 12px;">
+                <div class="wizard-actions">
                     <button class="btn-action btn-wiz-next" id="btnNextWiz" disabled>شروع همگام‌سازی تراز مرکز</button>
                 </div>
             </div>
 
-        </div>
+        </section>
+    </main>
 
-    </div>
-
+    <script src="controllers.js"></script>
+    <script src="calibration.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
