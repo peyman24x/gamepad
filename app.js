@@ -1,7 +1,8 @@
 /**
  * سامانه هوشمند تست و کالیبراسیون سخت‌افزار
  * هسته بازنویسی شده پردازش سیگنال و مدیریت جادوگر (app.js)
- * بدون باگ و بهینه‌سازی شده برای پلتفرم: Fix.Peyman24x.ir
+ * مجهز به سیستم کالیبراسیون زوری و صفرکننده خطای آفست (دریفت شاسی)
+ * پلتفرم: Fix.Peyman24x.ir
  */
 
 // ۱. مدیریت وضعیت مرکزی و پایدار برنامه (State Management)
@@ -13,7 +14,16 @@ const AppState = {
     animationFrameId: null,
     wizardStep: 1,
     
-    // ماتریس پایش کالیبراسیون ۳۶۰ درجه (مقدار True یعنی آن جهت تاچ شده است)
+    // ذخیره آنی پکت‌های خام ورودی جهت محاسبات کالیبراسیون تفاضلی
+    rawInputs: { lx: 0, ly: 0, rx: 0, ry: 0 },
+    
+    // لایه جبران‌ساز ماتریس خطا (آفست‌های زوری ثبت شده توسط کاربر)
+    offsets: {
+        left:  { x: 0, y: 0 },
+        right: { x: 0, y: 0 }
+    },
+    
+    // ماتریس پایش کالیبراسیون ۳۶۰ درجه
     directionsTracked: {
         left:  { n: false, e: false, s: false, w: false },
         right: { n: false, e: false, s: false, w: false }
@@ -118,11 +128,14 @@ function setConnectionState(connected, deviceName = '') {
     }
 }
 
-// ریست کردن گرافیک و ماتریس‌ها در زمان دیسکانکت
+// ریست کردن گرافیک، ماتریس‌ها و آفست‌ها در زمان دیسکانکت
 function resetUIElements() {
     document.querySelectorAll('.g-btn, .shoulder-btn').forEach(btn => btn.classList.remove('active'));
     DOM.tLeft.style.transform = 'translate(0px, 0px)';
     DOM.tRight.style.transform = 'translate(0px, 0px)';
+    AppState.offsets.left = { x: 0, y: 0 };
+    AppState.offsets.right = { x: 0, y: 0 };
+    AppState.rawInputs = { lx: 0, ly: 0, rx: 0, ry: 0 };
     clearCanvas(Ctx.left);
     clearCanvas(Ctx.right);
 }
@@ -147,7 +160,7 @@ function clearCanvas(ctx) {
     ctx.beginPath(); ctx.moveTo(0, 100); ctx.lineTo(200, 100); ctx.stroke();
 }
 
-// سیستم هوشمند دریافت متنی جهت‌های باقی‌مانده (راهنمای کاربر برای حل باگ ابهام زوایا)
+// دریافت وضعیت متنی جهت‌های باقی‌مانده دایره زوایا
 function getMissingDirectionsText() {
     const leftMissing = [];
     if (!AppState.directionsTracked.left.n) leftMissing.push('شمال (↑)');
@@ -168,7 +181,7 @@ function getMissingDirectionsText() {
     return text ? `جهات باقی‌مانده جهت چرخش 🔄 -> ${text}` : '✅ تمام جهات با موفقیت کالیبره و ثبت شدند!';
 }
 
-// هسته مدیریت و عایق‌سازی سوئیچ مابین APIها
+// مدیریت پایدار سوئیچ لایه API
 function switchAPI(apiType) {
     if (AppState.animationFrameId) cancelAnimationFrame(AppState.animationFrameId);
     
@@ -217,11 +230,8 @@ function initGamepadPolling() {
 
     window.addEventListener("gamepadconnected", checkGamepads);
     window.addEventListener("gamepaddisconnected", checkGamepads);
-    
-    // اجرای یکباره برای بررسی دسته‌های از قبل متصل شده
     checkGamepads();
 
-    // استارت لوپ فرکانس بالا برای حالت گیم‌پد استاندارد
     if (AppState.animationFrameId) cancelAnimationFrame(AppState.animationFrameId);
     
     function renderLoop() {
@@ -231,19 +241,17 @@ function initGamepadPolling() {
         const gp = gamepads[AppState.gamepadIndex];
         
         if (gp) {
-            // پایش باطری استاندارد (در صورت ساپورت مرورگر)
             if (gp.battery) {
                 DOM.batteryApiPrompt.style.display = 'none';
                 const level = Math.round(gp.battery.level * 100);
                 DOM.batteryLevel.textContent = `${level}%`;
                 DOM.batteryCharging.textContent = gp.battery.charging ? 'در حال شارژ ⚡' : 'در حال تخلیه باطری';
             } else {
-                DOM.batteryApiPrompt.style.display = 'block'; // نمایش درخواست سوئیچ به WebHID برای خواندن ولتاژ
+                DOM.batteryApiPrompt.style.display = 'block';
                 DOM.batteryLevel.textContent = 'محدودیت API لایه وب';
                 DOM.batteryCharging.textContent = 'نامشخص';
             }
 
-            // مپینگ دکمه‌های نقشه فیزیکی دیجیتال
             gp.buttons.forEach((btn, index) => {
                 const btnEl = document.getElementById(`m-btn-${index}`);
                 if (btnEl) {
@@ -252,7 +260,6 @@ function initGamepadPolling() {
                 }
             });
 
-            // استخراج فیلتر شده محورها بر اساس W3C
             const lx = gp.axes[0] || 0;
             const ly = gp.axes[1] || 0;
             const rx = gp.axes[2] || 0;
@@ -275,8 +282,6 @@ async function handleWebHIDConnectionTrigger() {
             
             setConnectionState(true, AppState.hidDevice.productName || "دستگاه بومی WebHID");
             DOM.batteryApiPrompt.style.display = 'none';
-            
-            // نمایش اطلاعات شبیه‌سازی شده ولتاژ پایدار سخت‌افزار از فریمور
             DOM.batteryLevel.textContent = "۹۵٪ [ولتاژ پایدار سخت‌افزاری]";
             DOM.batteryLevel.style.color = "var(--success)";
             DOM.batteryCharging.textContent = "منبع تغذیه USB فیکس";
@@ -285,9 +290,8 @@ async function handleWebHIDConnectionTrigger() {
                 if (AppState.activeApi !== 'hid') return;
                 const { data } = event;
                 
-                // پارسر انطباق‌پذیر باگ‌گیری شده برای خواندن بایت‌های استیک (با لحاظ کردن فرضیه Report ID)
                 if (data.byteLength >= 5) {
-                    const offset = data.byteLength > 60 ? 1 : 0; // تشخیص خودکار پکت‌های طولانی سونی/ایکس‌باکس
+                    const offset = data.byteLength > 60 ? 1 : 0;
                     const lx = (data.getUint8(offset + 0) - 128) / 128;
                     const ly = (data.getUint8(offset + 1) - 128) / 128;
                     const rx = (data.getUint8(offset + 2) - 128) / 128;
@@ -302,23 +306,32 @@ async function handleWebHIDConnectionTrigger() {
     }
 }
 
-// --- پردازشگر برداری مشترک سیگنال‌ها و محاسبات هندسی خطا ---
+// --- پردازشگر برداری مشترک سیگنال‌ها و محاسبات هندسی کالیبره شده ---
 function processControllerInputs(lx, ly, rx, ry) {
-    // اصلاح جابجایی بصری تامب‌استیک‌ها روی تصویر
-    DOM.tLeft.style.transform = `translate(${lx * 18}px, ${ly * 18}px)`;
-    DOM.tRight.style.transform = `translate(${rx * 18}px, ${ry * 18}px)`;
+    // ۱. ذخیره دیتاهای خام و واقعی لوپ ورودی سخت افزار در وضعیت مرکزی
+    AppState.rawInputs = { lx, ly, rx, ry };
 
-    // ثبت متون عددی فیلدها
-    DOM.mdLeftCoords.textContent = `${lx.toFixed(2)} / ${ly.toFixed(2)}`;
-    DOM.mdRightCoords.textContent = `${rx.toFixed(2)} / ${ry.toFixed(2)}`;
+    // ۲. اعمال کالیبراسیون تفاضلی ریل‌تایم (کم کردن آفست‌های ثبت شده اجباری و کلمپ بین ۱- و ۱)
+    const clx = Math.max(-1, Math.min(1, lx - AppState.offsets.left.x));
+    const cly = Math.max(-1, Math.min(1, ly - AppState.offsets.left.y));
+    const crx = Math.max(-1, Math.min(1, rx - AppState.offsets.right.x));
+    const cry = Math.max(-1, Math.min(1, ry - AppState.offsets.right.y));
 
-    // رندر خطوط برداری روی بوم‌های گرافیکی مجزا (راست در راست، چپ در چپ)
-    renderJoystickCanvas(Ctx.left, lx, ly);
-    renderJoystickCanvas(Ctx.right, rx, ry);
+    // اصلاح جابجایی بصری آنالوگ‌ها روی تصویر فیزیکی بر اساس مقادیر کالیبره شده جدید
+    DOM.tLeft.style.transform = `translate(${clx * 18}px, ${cly * 18}px)`;
+    DOM.tRight.style.transform = `translate(${crx * 18}px, ${cry * 18}px)`;
 
-    // محاسبات ریاضی خطا به کمک تئوری فیثاغورث نسبت به مرز ایده آل دایره مرجع
-    const leftDist = Math.sqrt(lx*lx + ly*ly);
-    const rightDist = Math.sqrt(rx*rx + ry*ry);
+    // ثبت متون عددی فیلدها با مختصات تصحیح شده کالیبراسیون
+    DOM.mdLeftCoords.textContent = `${clx.toFixed(2)} / ${cly.toFixed(2)}`;
+    DOM.mdRightCoords.textContent = `${crx.toFixed(2)} / ${cry.toFixed(2)}`;
+
+    // رندر خطوط برداری کالیبره شده روی بوم‌ها
+    renderJoystickCanvas(Ctx.left, clx, cly);
+    renderJoystickCanvas(Ctx.right, crx, cry);
+
+    // محاسبات ریاضی خطا نسبت به مرکز کالیبره شده
+    const leftDist = Math.sqrt(clx*clx + cly*cly);
+    const rightDist = Math.sqrt(crx*crx + cry*cry);
     
     const leftError = leftDist > 1.0 ? (leftDist - 1.0) * 100 : 0;
     const rightError = rightDist > 1.0 ? (rightDist - 1.0) * 100 : 0;
@@ -328,8 +341,8 @@ function processControllerInputs(lx, ly, rx, ry) {
     DOM.mdLeftError.style.color = leftError < 6 ? 'var(--success)' : 'var(--warning)';
     DOM.mdRightError.style.color = rightError < 6 ? 'var(--success)' : 'var(--warning)';
 
-    // ارجاع به فاز اعتبارسنجی جادوگر کالیبراسیون
-    validateWizardStepsRealtime(lx, ly, rx, ry);
+    // ارجاع مقادیر جهت پایش اتوماسیون گام‌ها
+    validateWizardStepsRealtime(clx, cly, crx, cry);
 }
 
 function renderJoystickCanvas(ctx, x, y) {
@@ -348,47 +361,54 @@ function renderJoystickCanvas(ctx, x, y) {
 }
 
 // --- موتور اصلی اعتبارسنجی هوشمند مراحل جادوگر کالیبراسیون ---
-function validateWizardStepsRealtime(lx, ly, rx, ry) {
+function validateWizardStepsRealtime(clx, cly, crx, cry) {
     if (!AppState.isConnected) return;
 
-    // گام ۲: همگام‌سازی تراز مرکز
+    // گام ۲: همگام‌سازی تراز مرکز (باگ‌گیری شده با متد کنترل زوری آفست)
     if (AppState.wizardStep === 2) {
-        const leftCentered = Math.abs(lx) < 0.05 && Math.abs(ly) < 0.05;
-        const rightCentered = Math.abs(rx) < 0.05 && Math.abs(ry) < 0.05;
+        // بررسی موقعیت سخت افزار بر اساس پکت‌های خام و بدون واسطه
+        const rawLx = AppState.rawInputs.lx;
+        const rawLy = AppState.rawInputs.ly;
+        const rawRx = AppState.rawInputs.rx;
+        const rawRy = AppState.rawInputs.ry;
+
+        const leftCentered = Math.abs(rawLx) < 0.05 && Math.abs(rawLy) < 0.05;
+        const rightCentered = Math.abs(rawRx) < 0.05 && Math.abs(rawRy) < 0.05;
         
         if (leftCentered && rightCentered) {
-            updateWizardVisuals(true, 'تراز مرکزی ایده آل است! استیک‌ها را ثابت نگه دارید و دکمه را بزنید.', '✅');
+            updateWizardVisuals(true, 'تراز مرکزی ایده‌آل است! استیک‌ها را ثابت نگه دارید و دکمه را بزنید.', '✅');
+            DOM.btnNextWiz.textContent = 'تایید و رفتن به مرحله تست جهت‌ها';
             DOM.btnNextWiz.disabled = false;
         } else {
-            updateWizardVisuals(false, 'خطا: لطفاً آنالوگ‌ها را رها کنید تا در مرکز مطلق قرار گیرند.', '❌', 'error');
-            DOM.btnNextWiz.disabled = true;
+            // دریفت وجود دارد اما سیستم قفل نمیکند؛ به کاربر اجازه صفر کردن زوری فیزیکی شاسی را می‌دهد
+            updateWizardVisuals(false, 'توجه: خطای آفست (دریفت شاسی) شناسایی شد. با کلیک روی دکمه زیر، موقعیت ناهماهنگ فعلی به عنوان مرکز جدید کالیبره و صفر می‌شود.', '⚠️', 'warning');
+            DOM.btnNextWiz.textContent = 'صفر کردن آفست و اجبار به تراز مرکز 🛠️';
+            DOM.btnNextWiz.disabled = false; 
         }
     } 
-    // گام ۳: پیمایش زوایا با ماتریس جهت‌شناسی ۳۶۰ درجه (باگ‌گیری شده با آستانه تشخیص بهینه)
+    // گام ۳: پیمایش زوایا (اجرا بر روی سیگنال‌های کالیبره و تراز شده)
     else if (AppState.wizardStep === 3) {
-        const targetThreshold = 0.70; // کاهش آستانه برای رجیستر دقیق‌تر زوایا
+        const targetThreshold = 0.70; 
         
-        // پایش دقیق آنالوگ چپ
-        if (ly < -targetThreshold) { AppState.directionsTracked.left.n = true; DOM.dirs.l.n.classList.add('done'); }
-        if (lx > targetThreshold)  { AppState.directionsTracked.left.e = true; DOM.dirs.l.e.classList.add('done'); }
-        if (ly > targetThreshold)  { AppState.directionsTracked.left.s = true; DOM.dirs.l.s.classList.add('done'); }
-        if (lx < -targetThreshold) { AppState.directionsTracked.left.w = true; DOM.dirs.l.w.classList.add('done'); }
+        // پایش دقیق آنالوگ چپ تراز شده
+        if (cly < -targetThreshold) { AppState.directionsTracked.left.n = true; DOM.dirs.l.n.classList.add('done'); }
+        if (clx > targetThreshold)  { AppState.directionsTracked.left.e = true; DOM.dirs.l.e.classList.add('done'); }
+        if (cly > targetThreshold)  { AppState.directionsTracked.left.s = true; DOM.dirs.l.s.classList.add('done'); }
+        if (clx < -targetThreshold) { AppState.directionsTracked.left.w = true; DOM.dirs.l.w.classList.add('done'); }
         
-        // پایش دقیق آنالوگ راست
-        if (ry < -targetThreshold) { AppState.directionsTracked.right.n = true; DOM.dirs.r.n.classList.add('done'); }
-        if (rx > targetThreshold)  { AppState.directionsTracked.right.e = true; DOM.dirs.r.e.classList.add('done'); }
-        if (ry > targetThreshold)  { AppState.directionsTracked.right.s = true; DOM.dirs.r.s.xl = true; DOM.dirs.r.s.classList.add('done'); }
-        if (rx < -targetThreshold) { AppState.directionsTracked.right.w = true; DOM.dirs.r.w.classList.add('done'); }
+        // پایش دقیق آنالوگ راست تراز شده (رفع باگ تداخل ساب‌پراپرتی زوایا)
+        if (cry < -targetThreshold) { AppState.directionsTracked.right.n = true; DOM.dirs.r.n.classList.add('done'); }
+        if (crx > targetThreshold)  { AppState.directionsTracked.right.e = true; DOM.dirs.r.e.classList.add('done'); }
+        if (cry > targetThreshold)  { AppState.directionsTracked.right.s = true; DOM.dirs.r.s.classList.add('done'); } 
+        if (crx < -targetThreshold) { AppState.directionsTracked.right.w = true; DOM.dirs.r.w.classList.add('done'); }
 
-        // صحت‌سنجی نهایی تمام ۸ جهت
         const lDone = AppState.directionsTracked.left.n && AppState.directionsTracked.left.e && AppState.directionsTracked.left.s && AppState.directionsTracked.left.w;
         const rDone = AppState.directionsTracked.right.n && AppState.directionsTracked.right.e && AppState.directionsTracked.right.s && AppState.directionsTracked.right.w;
 
         if (lDone && rDone) {
-            updateWizardVisuals(true, 'تست پیمایش زوایا کاملاً تایید شد! می‌توانید به فاز ذخیره‌سازی بروید.', '✅');
+            updateWizardVisuals(true, 'تست پیمایش زوایا با موفقیت تایید شد! آماده انتقال به فاز رایت نهایی حافظه کلاینت.', '✅');
             DOM.btnNextWiz.disabled = false;
         } else {
-            // چاپ زنده جهات باقی‌مانده در دشبورد برای هدایت کامل کاربر بدون ابهام
             updateWizardVisuals(false, getMissingDirectionsText(), '🔄', 'waiting');
             DOM.btnNextWiz.disabled = true;
         }
@@ -402,9 +422,19 @@ function updateWizardVisuals(isValid, text, indicator, stateClass = 'success') {
     DOM.vStatus.style.color = isValid ? 'var(--success)' : (stateClass === 'error' ? 'var(--danger)' : 'var(--warning)');
 }
 
-// منطق سوئیچینگ و کلیک دکمه اصلی هدایت گام به گام جادوگر کالیبراسیون
+// منطق سوئیچینگ و ثبت عملیات زوری کالیبراسیون هنگام کلیک دکمه اصلی جادوگر
 DOM.btnNextWiz.onclick = () => {
     if (!AppState.isConnected) return;
+
+    // تکنیک تزریق دریفت فیزیکی: اگر در مرحله ۲ روی دکمه کلیک شد، مختصات انحراف کنونی به عنوان مبدا جدید قفل می‌شود
+    if (AppState.wizardStep === 2) {
+        AppState.offsets.left.x = AppState.rawInputs.lx;
+        AppState.offsets.left.y = AppState.rawInputs.ly;
+        AppState.offsets.right.x = AppState.rawInputs.rx;
+        AppState.offsets.right.y = AppState.rawInputs.ry;
+        
+        logToSystem(`عملیات تراز زوری انجام شد! خطای آفست صفر شد -> چپ: [X:${AppState.offsets.left.x.toFixed(2)}, Y:${AppState.offsets.left.y.toFixed(2)}] | راست: [X:${AppState.offsets.right.x.toFixed(2)}, Y:${AppState.offsets.right.y.toFixed(2)}]`, 'success');
+    }
 
     AppState.wizardStep++;
     document.querySelectorAll('.step-node').forEach(node => node.classList.remove('active'));
@@ -413,16 +443,16 @@ DOM.btnNextWiz.onclick = () => {
         document.getElementById('sn-2').classList.add('active');
         document.getElementById('sn-1').classList.add('completed');
         DOM.wizTitle.textContent = 'مرحله ۲: همگام‌سازی نقطه صفر مرجع (تراز مرکزی)';
-        DOM.wizDesc.textContent = 'دسته‌ها و آنالوگ‌ها را کاملاً رها کنید. سیستم در حال بررسی و صفر کردن خطای آفست است.';
-        logToSystem('وارد مرحله دوم شدید. آنالوگ‌ها را رها کنید.');
+        DOM.wizDesc.textContent = 'دسته‌ها و آنالوگ‌ها را کاملاً رها کنید. در صورت وجود کجی یا انحراف شاسی، با زدن دکمه زیر تراز به صورت هوشمند صفر می‌شود.';
+        logToSystem('وارد مرحله دوم شدید. آنالوگ‌ها را در حالت رها قرار داده یا دکمه تراز زوری را فشرده کنید.');
         DOM.btnNextWiz.textContent = 'تایید و رفتن به مرحله تست جهت‌ها';
-        DOM.btnNextWiz.disabled = true; // نیاز به راستی‌آزمایی مجدد در فریم بعدی دارد
+        DOM.btnNextWiz.disabled = false;
         
     } else if (AppState.wizardStep === 3) {
         document.getElementById('sn-3').classList.add('active');
         document.getElementById('sn-2').classList.add('completed');
         DOM.wizTitle.textContent = 'مرحله ۳: پیمایش زوایا و ماتریس محیط دایره';
-        DOM.wizDesc.textContent = 'هر دو آنالوگ را به صورت کامل ۳۶۰ درجه بچرخانید تا تمام جهات جغرافیایی زیر ثبت و تایید شوند.';
+        DOM.wizDesc.textContent = 'هر دو آنالوگ را به صورت کامل ۳۶۰ درجه بچرخانید تا تمام جهات جغرافیایی زیر بر اساس تراز جدید تایید شوند.';
         DOM.angleTrackerUi.style.display = 'grid'; 
         resetAngleTrackerMatrix();
         logToSystem('وارد مرحله سوم شدید. هر دو استیک را کامل بچرخانید.');
@@ -433,16 +463,17 @@ DOM.btnNextWiz.onclick = () => {
         document.getElementById('sn-4').classList.add('active');
         document.getElementById('sn-3').classList.add('completed');
         DOM.wizTitle.textContent = 'مرحله ۴: ذخیره‌سازی نهایی الگوریتم‌های تصحیح خطا';
-        DOM.wizDesc.textContent = 'تست زاویه‌شناسی و تراز با موفقیت پاس شد. سیستم آماده ذخیره رجیسترها روی سیستم کلاینت فیکس است.';
+        DOM.wizDesc.textContent = 'تست زاویه‌شناسی و تراز تفاضلی با موفقیت پاس شد. سیستم آماده ذخیره رجیسترهای جدید روی سیستم کلاینت فیکس است.';
         DOM.angleTrackerUi.style.display = 'none'; 
-        updateWizardVisuals(true, 'آماده رایت نهایی داده‌ها روی لایه سیستم!', '💾');
+        updateWizardVisuals(true, 'آفست‌های تفاضلی استخراج شدند. آماده رایت نهایی داده‌ها روی لایه سیستم!', '💾');
         DOM.btnNextWiz.textContent = 'اعمال کالیبراسیون و ذخیره نهایی پروژه';
         DOM.btnNextWiz.disabled = false;
         logToSystem('فرآیند کالیبراسیون تایید نهایی شد.', 'success');
         
     } else if (AppState.wizardStep > 4) {
-        // ریست فرآیند پس از رایت و ذخیره موفقیت آمیز داده‌ها
+        // ریست فرآیند و پاکسازی کش آفست‌ها برای چرخه جدید کالیبراسیون
         AppState.wizardStep = 1;
+        AppState.offsets = { left: { x: 0, y: 0 }, right: { x: 0, y: 0 } };
         document.querySelectorAll('.step-node').forEach(node => node.classList.remove('completed'));
         document.getElementById('sn-1').classList.add('active');
         DOM.wizTitle.textContent = 'مرحله ۱: تأیید ارتباط با پروتکل امن';
@@ -453,7 +484,7 @@ DOM.btnNextWiz.onclick = () => {
     }
 };
 
-// بوت شدن اولیه و لیسنرهای سراسری هنگام لود صفحه
+// بوت شدن اولیه برنامه هنگام لود صفحه
 window.onload = () => {
     initCanvases();
     initGamepadPolling();
