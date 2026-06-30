@@ -63,31 +63,31 @@
                 
                 <div class="info-section-title">⚙️ مشخصات نرم‌افزاری (Software)</div>
                 <div class="info-grid">
-                    <div class="info-row"><span>FW Build Date</span><span id="fw-build-date">--</span></div>
-                    <div class="info-row"><span>FW Type</span><span id="fw-type">--</span></div>
-                    <div class="info-row"><span>FW Series</span><span id="fw-series">--</span></div>
-                    <div class="info-row"><span>FW Version</span><span id="fw-version">--</span></div>
-                    <div class="info-row"><span>FW Update</span><span id="fw-update">--</span></div>
-                    <div class="info-row"><span>FW Update Info</span><span id="fw-update-info">--</span></div>
-                    <div class="info-row"><span>SBL FW Version</span><span id="sbl-fw-version">--</span></div>
-                    <div class="info-row"><span>Venom FW Version</span><span id="venom-fw-version">--</span></div>
-                    <div class="info-row"><span>Spider FW Version</span><span id="spider-fw-version">--</span></div>
-                    <div class="info-row"><span>Touchpad FW Version</span><span id="touchpad-fw-version">--</span></div>
+                    <div class="info-row"><span>FW Build Date</span><span id="fw-build-date">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>FW Type</span><span id="fw-type">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>FW Series</span><span id="fw-series">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>FW Version</span><span id="fw-version">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>FW Update</span><span id="fw-update">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>FW Update Info</span><span id="fw-update-info">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>SBL FW Version</span><span id="sbl-fw-version">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>Venom FW Version</span><span id="venom-fw-version">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>Spider FW Version</span><span id="spider-fw-version">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>Touchpad FW Version</span><span id="touchpad-fw-version">در انتظار پکت...</span></div>
                 </div>
 
                 <div class="info-section-title accent-success">🛠️ مشخصات سخت‌افزاری (Hardware)</div>
                 <div class="info-grid">
-                    <div class="info-row"><span>Serial Number</span><span id="hw-serial">--</span></div>
-                    <div class="info-row"><span>MCU Unique ID</span><span id="hw-mcu-id">--</span></div>
-                    <div class="info-row"><span>PCBA ID</span><span id="hw-pcba-id">--</span></div>
-                    <div class="info-row"><span>Battery Barcode</span><span id="hw-battery-barcode">--</span></div>
-                    <div class="info-row"><span>VCM Left Barcode</span><span id="hw-vcm-left">--</span></div>
-                    <div class="info-row"><span>VCM Right Barcode</span><span id="hw-vcm-right">--</span></div>
-                    <div class="info-row"><span>Color</span><span id="hw-color">--</span></div>
-                    <div class="info-row"><span>Board Model</span><span id="hw-board-model">--</span></div>
-                    <div class="info-row"><span>HW Model</span><span id="hw-model">--</span></div>
-                    <div class="info-row"><span>Touchpad ID</span><span id="hw-touchpad-id">--</span></div>
-                    <div class="info-row"><span>Bluetooth Address</span><span id="hw-bt-address">--</span></div>
+                    <div class="info-row"><span>Serial Number</span><span id="hw-serial">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>MCU Unique ID</span><span id="hw-mcu-id">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>PCBA ID</span><span id="hw-pcba-id">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>Battery Barcode</span><span id="hw-battery-barcode">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>VCM Left Barcode</span><span id="hw-vcm-left">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>VCM Right Barcode</span><span id="hw-vcm-right">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>Color</span><span id="hw-color">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>Board Model</span><span id="hw-board-model">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>HW Model</span><span id="hw-model">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>Touchpad ID</span><span id="hw-touchpad-id">در انتظار پکت...</span></div>
+                    <div class="info-row"><span>Bluetooth Address</span><span id="hw-bt-address">در انتظار پکت...</span></div>
                 </div>
             </div>
         </section>
@@ -98,9 +98,23 @@
                 <div class="card-title">نقشه فیزیکی زنده و ماتریس پاسخ سخت‌افزاری</div>
                 
                 <div class="gamepad-illustration-card">
+                    <div class="trigger-bar-container left-trigger-bar">
+                        <span class="trigger-label">L2</span>
+                        <div class="trigger-progress"><div class="trigger-fill" id="fill-l2" style="width: 0%;"></div></div>
+                        <span class="trigger-val" id="val-l2">0%</span>
+                    </div>
+                    <div class="trigger-bar-container right-trigger-bar">
+                        <span class="trigger-label">R2</span>
+                        <div class="trigger-progress"><div class="trigger-fill" id="fill-r2" style="width: 0%;"></div></div>
+                        <span class="trigger-val" id="val-r2">0%</span>
+                    </div>
+
                     <div class="gamepad-container">
-                        <div class="shoulder-btn s-l1" id="m-btn-4"></div>
-                        <div class="shoulder-btn s-r1" id="m-btn-5"></div>
+                        <div class="analog-trigger t-l2" id="m-btn-6">L2</div>
+                        <div class="analog-trigger t-r2" id="m-btn-7">R2</div>
+
+                        <div class="shoulder-btn s-l1" id="m-btn-4">L1</div>
+                        <div class="shoulder-btn s-r1" id="m-btn-5">R1</div>
                         
                         <div class="cluster-left">
                             <div class="g-btn d-up" id="m-btn-12">↑</div>
