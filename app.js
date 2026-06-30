@@ -306,18 +306,18 @@ async function handleWebHIDConnectionTrigger() {
     }
 }
 
-// --- پردازشگر برداری مشترک سیگنال‌ها و محاسبات هندسی کالیبره شده ---
+// --- پردازشگر برداری مشترک سیگنال‌ها (اعمال کالیبراسیون تفاضلی زوری) ---
 function processControllerInputs(lx, ly, rx, ry) {
-    // ۱. ذخیره دیتاهای خام و واقعی لوپ ورودی سخت افزار در وضعیت مرکزی
+    // ۱. ذخیره دیتاهای واقعی لوپ ورودی سخت افزار در حافظه مرکزی جهت پردازش تراز زوری
     AppState.rawInputs = { lx, ly, rx, ry };
 
-    // ۲. اعمال کالیبراسیون تفاضلی ریل‌تایم (کم کردن آفست‌های ثبت شده اجباری و کلمپ بین ۱- و ۱)
+    // ۲. اعمال کالیبراسیون تفاضلی آنی (کم کردن آفست‌های ثبت شده از ورودی و کلمپ بین ۱- و ۱)
     const clx = Math.max(-1, Math.min(1, lx - AppState.offsets.left.x));
     const cly = Math.max(-1, Math.min(1, ly - AppState.offsets.left.y));
     const crx = Math.max(-1, Math.min(1, rx - AppState.offsets.right.x));
     const cry = Math.max(-1, Math.min(1, ry - AppState.offsets.right.y));
 
-    // اصلاح جابجایی بصری آنالوگ‌ها روی تصویر فیزیکی بر اساس مقادیر کالیبره شده جدید
+    // اصلاح جابجایی بصری آنالوگ‌ها بر اساس مقادیر کالیبره شده جدید
     DOM.tLeft.style.transform = `translate(${clx * 18}px, ${cly * 18}px)`;
     DOM.tRight.style.transform = `translate(${crx * 18}px, ${cry * 18}px)`;
 
@@ -329,7 +329,7 @@ function processControllerInputs(lx, ly, rx, ry) {
     renderJoystickCanvas(Ctx.left, clx, cly);
     renderJoystickCanvas(Ctx.right, crx, cry);
 
-    // محاسبات ریاضی خطا نسبت به مرکز کالیبره شده
+    // محاسبات ریاضی خطا نسبت به مرکز کالیبره شده جدید
     const leftDist = Math.sqrt(clx*clx + cly*cly);
     const rightDist = Math.sqrt(crx*crx + cry*cry);
     
@@ -364,9 +364,9 @@ function renderJoystickCanvas(ctx, x, y) {
 function validateWizardStepsRealtime(clx, cly, crx, cry) {
     if (!AppState.isConnected) return;
 
-    // گام ۲: همگام‌سازی تراز مرکز (باگ‌گیری شده با متد کنترل زوری آفست)
+    // گام ۲: همگام‌سازی تراز مرکز (رفع باگ گیر کردن دکمه با قابلیت کالیبراسیون زوری)
     if (AppState.wizardStep === 2) {
-        // بررسی موقعیت سخت افزار بر اساس پکت‌های خام و بدون واسطه
+        // بررسی موقعیت فیزیکی بر اساس ورودی خام برای تشخیص وجود یا عدم وجود دریفت بومی سخت‌افزار
         const rawLx = AppState.rawInputs.lx;
         const rawLy = AppState.rawInputs.ly;
         const rawRx = AppState.rawInputs.rx;
@@ -380,13 +380,13 @@ function validateWizardStepsRealtime(clx, cly, crx, cry) {
             DOM.btnNextWiz.textContent = 'تایید و رفتن به مرحله تست جهت‌ها';
             DOM.btnNextWiz.disabled = false;
         } else {
-            // دریفت وجود دارد اما سیستم قفل نمیکند؛ به کاربر اجازه صفر کردن زوری فیزیکی شاسی را می‌دهد
-            updateWizardVisuals(false, 'توجه: خطای آفست (دریفت شاسی) شناسایی شد. با کلیک روی دکمه زیر، موقعیت ناهماهنگ فعلی به عنوان مرکز جدید کالیبره و صفر می‌شود.', '⚠️', 'warning');
+            // در صورت وجود کجی یا دریفت، سیستم قفل نمی‌شود بلکه آپشن کالیبراسیون تفاضلی/زوری فعال می‌گردد
+            updateWizardVisuals(false, 'توجه: انحراف آنالوگ (دریفت شاسی) شناسایی شد. با کلیک روی دکمه زیر، موقعیت ناهماهنگ فعلی به عنوان مرکز جدید کالیبره و صفر می‌شود.', '⚠️', 'warning');
             DOM.btnNextWiz.textContent = 'صفر کردن آفست و اجبار به تراز مرکز 🛠️';
             DOM.btnNextWiz.disabled = false; 
         }
     } 
-    // گام ۳: پیمایش زوایا (اجرا بر روی سیگنال‌های کالیبره و تراز شده)
+    // گام ۳: پیمایش زوایا (اجرا بر روی سیگنال‌های کالیبره و تراز شده جدید)
     else if (AppState.wizardStep === 3) {
         const targetThreshold = 0.70; 
         
@@ -396,7 +396,7 @@ function validateWizardStepsRealtime(clx, cly, crx, cry) {
         if (cly > targetThreshold)  { AppState.directionsTracked.left.s = true; DOM.dirs.l.s.classList.add('done'); }
         if (clx < -targetThreshold) { AppState.directionsTracked.left.w = true; DOM.dirs.l.w.classList.add('done'); }
         
-        // پایش دقیق آنالوگ راست تراز شده (رفع باگ تداخل ساب‌پراپرتی زوایا)
+        // پایش دقیق آنالوگ راست تراز شده (رفع باگ تداخل سینتکس .xl در پایش جهت جنوب)
         if (cry < -targetThreshold) { AppState.directionsTracked.right.n = true; DOM.dirs.r.n.classList.add('done'); }
         if (crx > targetThreshold)  { AppState.directionsTracked.right.e = true; DOM.dirs.r.e.classList.add('done'); }
         if (cry > targetThreshold)  { AppState.directionsTracked.right.s = true; DOM.dirs.r.s.classList.add('done'); } 
@@ -426,7 +426,7 @@ function updateWizardVisuals(isValid, text, indicator, stateClass = 'success') {
 DOM.btnNextWiz.onclick = () => {
     if (!AppState.isConnected) return;
 
-    // تکنیک تزریق دریفت فیزیکی: اگر در مرحله ۲ روی دکمه کلیک شد، مختصات انحراف کنونی به عنوان مبدا جدید قفل می‌شود
+    // تزریق فیزیکی آفست: اگر در مرحله ۲ روی دکمه کلیک شد، مختصات انحراف کنونی به عنوان مبدا جدید قفل می‌شود
     if (AppState.wizardStep === 2) {
         AppState.offsets.left.x = AppState.rawInputs.lx;
         AppState.offsets.left.y = AppState.rawInputs.ly;
@@ -461,6 +461,7 @@ DOM.btnNextWiz.onclick = () => {
         
     } else if (AppState.wizardStep === 4) {
         document.getElementById('sn-4').classList.add('active');
+        document.getElementById('sn-2').classList.add('completed'); // رفع باگ آدرس‌دهی استپ پایانی کلاینت
         document.getElementById('sn-3').classList.add('completed');
         DOM.wizTitle.textContent = 'مرحله ۴: ذخیره‌سازی نهایی الگوریتم‌های تصحیح خطا';
         DOM.wizDesc.textContent = 'تست زاویه‌شناسی و تراز تفاضلی با موفقیت پاس شد. سیستم آماده ذخیره رجیسترهای جدید روی سیستم کلاینت فیکس است.';
@@ -471,7 +472,7 @@ DOM.btnNextWiz.onclick = () => {
         logToSystem('فرآیند کالیبراسیون تایید نهایی شد.', 'success');
         
     } else if (AppState.wizardStep > 4) {
-        // ریست فرآیند و پاکسازی کش آفست‌ها برای چرخه جدید کالیبراسیون
+        // ریست فرآیند و پاکسازی کش آفست‌ها برای چرخه‌های کالیبراسیون بعدی
         AppState.wizardStep = 1;
         AppState.offsets = { left: { x: 0, y: 0 }, right: { x: 0, y: 0 } };
         document.querySelectorAll('.step-node').forEach(node => node.classList.remove('completed'));
@@ -479,7 +480,7 @@ DOM.btnNextWiz.onclick = () => {
         DOM.wizTitle.textContent = 'مرحله ۱: تأیید ارتباط با پروتکل امن';
         DOM.wizDesc.textContent = 'برای تغییر ساختار رجیسترهای سنسور اثر هال یا پتانسیومترهای فیزیکی، کنترلر را متصل کنید.';
         DOM.btnNextWiz.textContent = 'شروع همگام‌سازی تراز مرکز';
-        logToSystem('داده‌های ماتریس کالیبراسیون با موفقیت در سیستم فیکس رجیستر و ذخیره شدند.', 'success');
+        logToSystem('داده‌های ماتریس کالیبراسیون با موفقیت در سیستم فیکس ثبت و ذخیره شدند.', 'success');
         updateWizardVisuals(true, 'عملیات ذخیره‌سازی با موفقیت روی سیستم رایت شد.', '✅');
     }
 };
