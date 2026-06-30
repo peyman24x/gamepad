@@ -8,20 +8,21 @@
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
         
         :root {
-            --bg-main: #060913;
-            --bg-card: #0d1222;
-            --bg-inner: #151c33;
-            --primary: #3b82f6;
-            --primary-glow: rgba(59, 130, 246, 0.5);
+            --bg-main: #05070f;
+            --bg-card: #0b0f19;
+            --bg-inner: #121829;
+            --primary: #2563eb;
+            --primary-glow: rgba(37, 99, 235, 0.4);
             --success: #10b981;
-            --success-glow: rgba(16, 185, 129, 0.5);
+            --success-glow: rgba(16, 185, 129, 0.4);
             --warning: #f59e0b;
-            --warning-glow: rgba(245, 158, 11, 0.5);
+            --warning-glow: rgba(245, 158, 11, 0.4);
             --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.4);
             --text-white: #f8fafc;
-            --text-dim: #64748b;
+            --text-dim: #475569;
             --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.08);
+            --border: rgba(255, 255, 255, 0.06);
         }
 
         * {
@@ -42,10 +43,10 @@
 
         /* Modern Glassmorphic Header */
         header {
-            background: rgba(13, 18, 34, 0.85);
+            background: rgba(11, 15, 25, 0.8);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            padding: 20px 40px;
+            padding: 18px 40px;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -57,7 +58,7 @@
         }
 
         .header-title h1 {
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 900;
             background: linear-gradient(135deg, #ffffff, #93c5fd);
             -webkit-background-clip: text;
@@ -65,16 +66,16 @@
         }
 
         .header-brand a {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: var(--primary);
             text-decoration: none;
             letter-spacing: 0.5px;
             transition: all 0.3s ease;
-            padding: 8px 16px;
+            padding: 6px 14px;
             border-radius: 8px;
-            background: rgba(59, 130, 246, 0.08);
-            border: 1px solid rgba(59, 130, 246, 0.2);
+            background: rgba(37, 99, 235, 0.08);
+            border: 1px solid rgba(37, 99, 235, 0.15);
             text-shadow: 0 0 15px var(--primary-glow);
         }
 
@@ -88,11 +89,11 @@
         /* Layout Grid */
         .app-layout {
             max-width: 1500px;
-            margin: 35px auto;
-            padding: 0 25px;
+            margin: 30px auto;
+            padding: 0 20px;
             display: grid;
             grid-template-columns: 1fr;
-            gap: 30px;
+            gap: 25px;
         }
 
         @media (min-width: 1200px) {
@@ -101,7 +102,7 @@
             }
         }
 
-        /* Reusable Glass Cards */
+        /* Reusable Cards */
         .card {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -110,24 +111,51 @@
             box-shadow: 0 12px 40px rgba(0,0,0,0.4);
             position: relative;
             overflow: hidden;
+            transition: opacity 0.4s ease, filter 0.4s ease;
+        }
+
+        /* State Indicator for Disconnection */
+        .device-dependent {
+            position: relative;
+        }
+        
+        body.disconnected .device-dependent {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(0.8);
+        }
+
+        body.disconnected .device-dependent::before {
+            content: '⚠️ در انتظار اتصال سخت‌افزار...';
+            position: absolute;
+            top: 15px;
+            left: 20px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #f87171;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            z-index: 10;
         }
 
         .card-title {
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 700;
             margin-bottom: 20px;
             padding-bottom: 12px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: space-between;
         }
 
-        /* Custom API Engine Switcher Widget */
+        /* Active API Switcher Widget */
         .api-toggle-container {
             background: var(--bg-inner);
             border-radius: 10px;
-            padding: 6px;
+            padding: 4px;
             display: flex;
             gap: 4px;
             margin-bottom: 20px;
@@ -142,13 +170,9 @@
             border: none;
             color: var(--text-muted);
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
         }
 
         .api-btn.active {
@@ -156,13 +180,14 @@
             color: white;
             box-shadow: 0 4px 15px var(--primary-glow);
         }
-
+        
         .api-btn.active.hid-mode {
             background: var(--warning);
+            color: #000;
             box-shadow: 0 4px 15px var(--warning-glow);
         }
 
-        /* Interactive Dynamic Gamepad Visualizer Structure */
+        /* Hardware Visualizer */
         .gamepad-illustration-card {
             display: flex;
             flex-direction: column;
@@ -171,40 +196,38 @@
             padding: 30px;
             background: var(--bg-inner);
             border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.03);
-            position: relative;
+            border: 1px solid rgba(255,255,255,0.02);
         }
 
         .gamepad-container {
             position: relative;
             width: 480px;
             height: 300px;
-            background: #1d263b;
+            background: #161e30;
             border-radius: 60px 60px 90px 90px;
-            box-shadow: inset 0 8px 20px rgba(255,255,255,0.05), 0 20px 50px rgba(0,0,0,0.6);
-            border: 2px solid #2e3b59;
+            box-shadow: inset 0 8px 20px rgba(255,255,255,0.03), 0 20px 50px rgba(0,0,0,0.6);
+            border: 2px solid #232f4b;
             transform: scale(0.95);
         }
 
-        /* Gamepad Handles */
         .gamepad-container::before, .gamepad-container::after {
             content: '';
             position: absolute;
-            bottom: -30px;
-            width: 100px;
-            height: 160px;
-            background: #1d263b;
-            border: 2px solid #2e3b59;
+            bottom: -25px;
+            width: 95px;
+            height: 155px;
+            background: #161e30;
+            border: 2px solid #232f4b;
             z-index: -1;
         }
-        .gamepad-container::before { left: -10px; border-radius: 50px 0 40px 90px; transform: rotate(15deg); }
-        .gamepad-container::after { right: -10px; border-radius: 0 50px 90px 40px; transform: rotate(-15deg); }
+        .gamepad-container::before { left: -8px; border-radius: 50px 0 40px 90px; transform: rotate(14deg); }
+        .gamepad-container::after { right: -8px; border-radius: 0 50px 90px 40px; transform: rotate(-14deg); }
 
-        /* Generic Button styling on schematic */
+        /* Buttons on Schematic Map */
         .g-btn {
             position: absolute;
-            background: #2a3754;
-            border: 1px solid #3e507a;
+            background: #253252;
+            border: 1px solid #364875;
             color: var(--text-muted);
             border-radius: 50%;
             display: flex;
@@ -212,7 +235,7 @@
             justify-content: center;
             font-size: 11px;
             font-weight: bold;
-            transition: all 0.1s ease;
+            transition: background 0.05s, transform 0.05s;
         }
 
         .g-btn.active {
@@ -220,30 +243,30 @@
             color: white !important;
             box-shadow: 0 0 15px var(--success-glow);
             border-color: #22c55e !important;
+            transform: scale(0.95);
         }
 
-        /* Face Buttons Right Cluster */
+        /* Face & Navigation Layouts */
         .cluster-right { position: absolute; right: 55px; top: 75px; width: 90px; height: 90px; }
         .b-triangle { top: 0; left: 32px; width: 26px; height: 26px; }
         .b-circle { top: 32px; right: 0; width: 26px; height: 26px; }
         .b-cross { bottom: 0; left: 32px; width: 26px; height: 26px; }
         .b-square { top: 32px; left: 0; width: 26px; height: 26px; }
 
-        /* D-PAD Left Cluster */
         .cluster-left { position: absolute; left: 55px; top: 75px; width: 90px; height: 90px; }
-        .d-up { top: 0; left: 32px; width: 26px; height: 30px; border-radius: 4px; }
-        .d-right { top: 32px; right: 0; width: 30px; height: 26px; border-radius: 4px; }
-        .d-down { bottom: 0; left: 32px; width: 26px; height: 30px; border-radius: 4px; }
-        .d-left { top: 32px; left: 0; width: 30px; height: 26px; border-radius: 4px; }
+        .d-up { top: 0; left: 32px; width: 26px; height: 28px; border-radius: 4px; }
+        .d-right { top: 32px; right: 0; width: 28px; height: 26px; border-radius: 4px; }
+        .d-down { bottom: 0; left: 32px; width: 26px; height: 28px; border-radius: 4px; }
+        .d-left { top: 32px; left: 0; width: 28px; height: 26px; border-radius: 4px; }
 
-        /* Joysticks Visual Positions */
+        /* Joysticks Components */
         .g-stick {
             position: absolute;
             width: 65px;
             height: 65px;
-            background: #141a29;
+            background: #0f1524;
             border-radius: 50%;
-            border: 3px solid #344266;
+            border: 3px solid #2d3b5c;
             top: 155px;
         }
         .g-stick-left { left: 135px; }
@@ -251,35 +274,34 @@
         
         .g-thumb {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            background: #2e3a57;
+            width: 42px;
+            height: 42px;
+            background: #2b395b;
             border-radius: 50%;
-            top: 10px;
-            left: 10px;
+            top: 9px;
+            left: 9px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: transform 0.05s linear;
+            transition: transform 0.02s linear;
+            border: 1px solid #3d5080;
         }
 
-        /* Top Shoulders & Triggers */
         .shoulder-btn {
             position: absolute;
-            top: -15px;
-            width: 100px;
-            height: 25px;
-            background: #2a3754;
+            top: -14px;
+            width: 95px;
+            height: 22px;
+            background: #253252;
             border-radius: 8px 8px 4px 4px;
-            border: 1px solid #3e507a;
+            border: 1px solid #364875;
         }
-        .s-l1 { left: 60px; }
-        .s-r1 { right: 60px; }
+        .s-l1 { left: 65px; }
+        .s-r1 { right: 65px; }
 
-        /* Center utilities */
         .b-ps { left: 225px; top: 180px; width: 30px; height: 30px; font-size: 9px; }
-        .b-share { left: 150px; top: 75px; width: 35px; height: 18px; border-radius: 4px; }
-        .b-options { right: 150px; top: 75px; width: 35px; height: 18px; border-radius: 4px; }
+        .b-share { left: 155px; top: 78px; width: 32px; height: 16px; border-radius: 3px; font-size: 8px;}
+        .b-options { right: 155px; top: 78px; width: 32px; height: 16px; border-radius: 3px; font-size: 8px;}
 
-        /* Stick Performance Canvas Panel Layout */
+        /* Canvas Layout Dashboard */
         .sticks-dashboard {
             display: grid;
             grid-template-columns: 1fr;
@@ -297,16 +319,16 @@
             background: var(--bg-inner);
             padding: 20px;
             border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.01);
         }
 
         .canvas-frame {
             position: relative;
-            width: 220px;
-            height: 220px;
-            background: #090d16;
+            width: 200px;
+            height: 200px;
+            background: #080c14;
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.05);
+            border: 2px solid rgba(255,255,255,0.04);
             margin-bottom: 15px;
         }
         canvas { width: 100%; height: 100%; }
@@ -319,24 +341,23 @@
         }
         .metric-item {
             background: rgba(0,0,0,0.2);
-            padding: 10px;
-            border-radius: 8px;
+            padding: 8px;
+            border-radius: 6px;
             text-align: center;
-            font-size: 13px;
+            font-size: 12px;
         }
         .metric-num {
             font-family: monospace;
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             color: var(--primary);
             margin-top: 4px;
         }
 
-        /* ADVANCED CALIBRATION WIZARD WITH REALTIME LIVE GRAPHICS */
+        /* Wizard Validation Module */
         .wizard-container {
-            margin-top: 25px;
             border-left: 4px solid var(--warning);
-            background: linear-gradient(145deg, var(--bg-card), #161a2e);
+            background: linear-gradient(145deg, var(--bg-card), #14192b);
         }
 
         .wizard-steps-header {
@@ -349,60 +370,71 @@
         .step-node {
             flex: 1;
             text-align: center;
-            opacity: 0.3;
+            opacity: 0.25;
             transition: all 0.3s;
+            font-size: 13px;
         }
         .step-node.active { opacity: 1; color: var(--warning); font-weight: bold; }
         .step-node.completed { opacity: 0.8; color: var(--success); }
         
         .step-badge {
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.08);
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 6px;
             font-weight: bold;
+            font-size: 12px;
         }
-        .step-node.active .step-badge { background: var(--warning); color: var(--bg-main); }
+        .step-node.active .step-badge { background: var(--warning); color: #000; }
         .step-node.completed .step-badge { background: var(--success); color: white; }
 
         .wizard-body {
             display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
-            background: rgba(0,0,0,0.25);
+            background: rgba(0,0,0,0.2);
             padding: 20px;
             border-radius: 12px;
             margin-bottom: 20px;
         }
         @media (min-width: 768px) {
-            .wizard-body { grid-template-columns: 1fr 240px; }
+            .wizard-body { grid-template-columns: 1fr 260px; }
         }
 
+        /* Real-Time Step Correctness Visual Feedback */
         .wizard-graphic-feedback {
             height: 160px;
-            background: #080c16;
+            background: #070b14;
             border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.03);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             position: relative;
             overflow: hidden;
+            padding: 10px;
         }
 
-        /* Live Logger Console */
+        .validation-status {
+            margin-top: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+        }
+
         .terminal-box {
-            background: #04070f;
+            background: #03050a;
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 12px;
             font-family: monospace;
-            font-size: 12px;
-            height: 110px;
+            font-size: 11px;
+            height: 105px;
             overflow-y: auto;
             color: #38bdf8;
             margin-top: 15px;
@@ -412,52 +444,47 @@
             background: var(--primary);
             color: white;
             border: none;
-            padding: 14px 28px;
-            border-radius: 10px;
+            padding: 12px 24px;
+            border-radius: 8px;
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
             cursor: pointer;
             transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
         }
-        .btn-action:hover { opacity: 0.95; transform: translateY(-1px); }
+        .btn-action:hover { opacity: 0.95; }
         .btn-wiz-next { background: var(--warning); color: #000; }
-        .btn-wiz-next:hover { box-shadow: 0 0 20px var(--warning-glow); }
+        .btn-wiz-next:hover { box-shadow: 0 0 15px var(--warning-glow); }
 
-        /* Realtime Animation Helpers */
+        /* Animation Helpers */
         .pulse-circle {
             width: 40px;
             height: 40px;
             border: 3px solid var(--warning);
             border-radius: 50%;
-            animation: pulse 1.5s infinite ease-in-out;
+            animation: pulse 1.4s infinite ease-in-out;
         }
         @keyframes pulse {
             0% { transform: scale(0.6); opacity: 1; }
-            100% { transform: scale(1.6); opacity: 0; }
+            100% { transform: scale(1.5); opacity: 0; }
         }
 
-        .fill-track-ui {
-            width: 100px;
-            height: 100px;
-            border: 4px dashed rgba(255,255,255,0.1);
+        .correctness-indicator {
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
-            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            transition: all 0.3s ease;
         }
-        .fill-progress-arc {
-            position: absolute;
-            top: -4px; left: -4px; width: 100px; height: 100px;
-            border: 4px solid var(--success);
-            border-radius: 50%;
-            clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-            transform: rotate(0deg);
-            transition: transform 0.1s linear;
-        }
+        .correctness-indicator.waiting { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 2px dashed var(--warning); }
+        .correctness-indicator.success { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 2px solid var(--success); box-shadow: 0 0 15px var(--success-glow); }
+        .correctness-indicator.error { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 2px solid var(--danger); }
     </style>
 </head>
-<body>
+<body class="disconnected">
 
     <header>
         <div class="header-title">
@@ -470,60 +497,50 @@
 
     <div class="app-layout">
         
-        <!-- Sidebar Settings & Logs -->
         <div style="display: flex; flex-direction: column; gap: 25px;">
             <div class="card">
                 <div class="card-title">
-                    <span>موتور ارتباطی و پروتکل API</span>
+                    <span>موتور ارتباطی و پروتکل سخت‌افزار</span>
+                    <span id="activeApiBadge" style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.05); color:var(--text-muted);">عدم شناسایی</span>
                 </div>
                 
                 <div class="api-toggle-container">
-                    <button class="api-btn active" id="apiGamepadBtn" onclick="switchAPI('gamepad')">
-                        Standard Gamepad API
-                    </button>
-                    <button class="api-btn" id="apiHidBtn" onclick="switchAPI('hid')">
-                        Low-Level WebHID API
-                    </button>
+                    <button class="api-btn active" id="apiGamepadBtn">Standard Gamepad</button>
+                    <button class="api-btn" id="apiHidBtn">Low-Level WebHID</button>
                 </div>
 
-                <div style="font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 15px;">
-                    حالت <strong>Standard Gamepad</strong> برای تست فرکانس و بازخورد دکمه‌ها در تمام سیستم‌ها مناسب است. حالت <strong>Low-Level WebHID</strong> دسترسی دایرکت برای رایت مقادیر آفست روی کدهای EEPROM دسته فراهم می‌کند.
-                </div>
-
-                <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; font-size: 13px;">
-                    <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
-                        <span>وضعیت اتصال:</span>
-                        <span id="connStatus" style="color:var(--success); font-weight:bold;">اتصال مجازی فعال</span>
+                <div style="background: rgba(0,0,0,0.2); padding: 14px; border-radius: 8px; font-size: 13px; margin-bottom: 10px;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>وضعیت سخت‌افزار:</span>
+                        <span id="connStatus" style="color:var(--danger); font-weight:bold;">قطع اتصال</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span>سطح باطری کنترلر:</span>
+                        <span id="batteryLevel" style="color:var(--text-muted); font-family: monospace;">--</span>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
-                        <span>نوع سنسور فیکس:</span>
-                        <span style="color:var(--warning);">TMR / Hall Effect Ready</span>
+                        <span>وضعیت منبع تغذیه:</span>
+                        <span id="batteryCharging" style="color:var(--text-muted);">مشخص نیست</span>
                     </div>
                 </div>
 
                 <div class="terminal-box" id="sysLog">
-                    [سیستم] موتور پردازش هوشمند آماده بکار است.
-[سیستم] حالت شبیه‌ساز امن لود شد. برای اعمال سخت افزاری فیزیکی، دسته را با کابل متصل کنید.
+                    [سیستم] سیستم هوشمند Fix آماده دریافت سیگنال است.
+[سیستم] برای شروع فرآیند، کنترلر خود را متصل کرده و یکی از دکمه‌ها را فشار دهید.
                 </div>
             </div>
         </div>
 
-        <!-- Main Workspace Area -->
         <div style="display: flex; flex-direction: column; gap: 25px;">
             
-            <!-- Real-time Controller Graphic Map Structure -->
-            <div class="card">
-                <div class="card-title">نقشه سخت‌افزاری زنده و ماتریس دیجیتال پاسخ دکمه‌ها</div>
+            <div class="card device-dependent">
+                <div class="card-title">نقشه فیزیکی زنده و ماتریس پاسخ سخت‌افزاری</div>
                 
                 <div class="gamepad-illustration-card">
-                    
-                    <!-- SVG / HTML Composite Interactive Controller -->
                     <div class="gamepad-container">
-                        <!-- Shoulder Buttons -->
                         <div class="shoulder-btn s-l1" id="m-btn-4"></div>
                         <div class="shoulder-btn s-r1" id="m-btn-5"></div>
                         
-                        <!-- D-Pad Left -->
                         <div class="cluster-left">
                             <div class="g-btn d-up" id="m-btn-12">↑</div>
                             <div class="g-btn d-right" id="m-btn-15">→</div>
@@ -531,12 +548,10 @@
                             <div class="g-btn d-left" id="m-btn-14">←</div>
                         </div>
 
-                        <!-- Utility Buttons -->
-                        <div class="g-btn b-share" id="m-btn-8">Share</div>
-                        <div class="g-btn b-options" id="m-btn-9">Opt</div>
+                        <div class="g-btn b-share" id="m-btn-8">SHARE</div>
+                        <div class="g-btn b-options" id="m-btn-9">OPT</div>
                         <div class="g-btn b-ps" id="m-btn-16">PS</div>
 
-                        <!-- Joysticks Bases and Thumbs -->
                         <div class="g-stick g-stick-left" id="m-btn-10">
                             <div class="g-thumb" id="t-left"></div>
                         </div>
@@ -544,7 +559,6 @@
                             <div class="g-thumb" id="t-right"></div>
                         </div>
 
-                        <!-- Face Buttons Right -->
                         <div class="cluster-right">
                             <div class="g-btn b-triangle" id="m-btn-3">▲</div>
                             <div class="g-btn b-circle" id="m-btn-2">●</div>
@@ -552,58 +566,57 @@
                             <div class="g-btn b-square" id="m-btn-0">■</div>
                         </div>
                     </div>
-
                 </div>
 
-                <!-- Joysticks Precision Performance Dashboard -->
                 <div class="sticks-dashboard">
                     <div class="canvas-container">
-                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">بردار آنالوگ چپ</div>
+                        <div style="font-size: 13px; font-weight: bold; margin-bottom: 10px; color: var(--text-muted);">بردار آنالوگ چپ (مختصات خطی)</div>
                         <div class="canvas-frame"><canvas id="cLeft"></canvas></div>
                         <div class="metric-row">
-                            <div class="metric-item">مختصات X <div class="metric-num" id="md-lx">0.00</div></div>
-                            <div class="metric-item">خطای دایره‌ای <div class="metric-num" style="color:var(--success);" id="md-le">0.15%</div></div>
+                            <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-l-coords">0.00 / 0.00</div></div>
+                            <div class="metric-item">خطای هندسی دایره<div class="metric-num" style="color:var(--success);" id="md-le">0.00%</div></div>
                         </div>
                     </div>
 
                     <div class="canvas-container">
-                        <div style="font-size: 14px; font-weight: bold; margin-bottom: 10px;">بردار آنالوگ راست</div>
+                        <div style="font-size: 13px; font-weight: bold; margin-bottom: 10px; color: var(--text-muted);">بردار آنالوگ راست (مختصات خطی)</div>
                         <div class="canvas-frame"><canvas id="cRight"></canvas></div>
                         <div class="metric-row">
-                            <div class="metric-item">مختصات X <div class="metric-num" id="md-rx">0.00</div></div>
-                            <div class="metric-item">خطای دایره‌ای <div class="metric-num" style="color:var(--success);" id="md-re">0.21%</div></div>
+                            <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-r-coords">0.00 / 0.00</div></div>
+                            <div class="metric-item">خطای هندسی دایره<div class="metric-num" style="color:var(--success);" id="md-re">0.00%</div></div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- DYNAMIC CALIBRATION WIZARD WITH REALTIME GRAPHICAL INTERFACE -->
-            <div class="card wizard-container">
-                <div class="card-title" style="color: var(--warning);">جادوگر اتوماتیک کالیبراسیون و رفع دریفت هوشمند آنالوگ‌ها</div>
+            <div class="card wizard-container device-dependent">
+                <div class="card-title" style="color: var(--warning);">جادوگر خودکار کالیبراسیون و رفع دیستورشن سخت‌افزاری آنالوگ‌ها</div>
                 
                 <div class="wizard-steps-header">
-                    <div class="step-node active" id="sn-1"><div class="step-badge">۱</div>اتصال امن</div>
-                    <div class="step-node" id="sn-2"><div class="step-badge">۲</div>ثبت مرکز صفر</div>
-                    <div class="step-node" id="sn-3"><div class="step-badge">۳</div>اصلاح دایره دامنه</div>
-                    <div class="step-node" id="sn-4"><div class="step-badge">۴</div>ذخیره در سخت‌افزار</div>
+                    <div class="step-node active" id="sn-1"><div class="step-badge">۱</div>اتصال پورت</div>
+                    <div class="step-node" id="sn-2"><div class="step-badge">۲</div>تراز صفر مرجع</div>
+                    <div class="step-node" id="sn-3"><div class="step-badge">۳</div>پیمایش زوایا</div>
+                    <div class="step-node" id="sn-4"><div class="step-badge">۴</div>ذخیره نهایی</div>
                 </div>
 
                 <div class="wizard-body">
                     <div style="display: flex; flex-direction: column; justify-content: center;">
-                        <h3 id="wizTitle" style="font-size:16px; margin-bottom:10px; color:#fff;">مرحله ۱: بررسی کانال های ارتباطی USB</h3>
-                        <p id="wizDesc" style="font-size:14px; color:var(--text-muted); line-height:1.7;">
-                            برای تغییر ساختار رجیسترهای سنسور اثر هال یا TMR، لطفاً کنترلر را با یک کابل کواکسیال باکیفیت به پورت اصلی مادربرد متصل کنید. در حال حاضر شبیه‌ساز خودکار برای تایید ریتم حرکت کالیبراسیون فعال است.
+                        <h3 id="wizTitle" style="font-size:15px; margin-bottom:10px; color:#fff;">مرحله ۱: تأیید ارتباط با پروتکل امن</h3>
+                        <p id="wizDesc" style="font-size:13px; color:var(--text-muted); line-height:1.7;">
+                            برای تغییر ساختار رجیسترهای سنسور اثر هال یا پتانسیومترهای فیزیکی، کنترلر را متصل کنید. در این فاز سیستم در حال راستی‌آزمایی نرخ داده‌های دریافتی جهت اعمال تصحیح ماتریسی است.
                         </p>
                     </div>
                     
-                    <!-- Dynamic Graphic Feedback Area -->
-                    <div class="wizard-graphic-feedback" id="wizGraphic">
-                        <div class="pulse-circle"></div>
+                    <div>
+                        <div class="wizard-graphic-feedback" id="wizGraphic">
+                            <div class="correctness-indicator waiting" id="vIndicator">⏳</div>
+                        </div>
+                        <div class="validation-status" id="vStatus" style="color: var(--warning);">در انتظار شروع عملیات...</div>
                     </div>
                 </div>
 
                 <div style="display: flex; gap: 12px;">
-                    <button class="btn-action btn-wiz-next" id="btnNextWiz">شروع همگام‌سازی مرکزی</button>
+                    <button class="btn-action btn-wiz-next" id="btnNextWiz">شروع همگام‌سازی تراز مرکز</button>
                 </div>
             </div>
 
@@ -611,170 +624,6 @@
 
     </div>
 
-    <script>
-        let currentApi = 'gamepad';
-        let wizardStep = 1;
-        let angleSeed = 0;
-
-        function switchAPI(mode) {
-            currentApi = mode;
-            document.getElementById('apiGamepadBtn').classList.remove('active');
-            document.getElementById('apiHidBtn').classList.remove('active');
-            
-            if (mode === 'gamepad') {
-                document.getElementById('apiGamepadBtn').classList.add('active');
-                logToConsole("سوئیچ به پروتکل استاندارد Gamepad API انجام شد.");
-            } else {
-                document.getElementById('apiHidBtn').classList.add('active', 'hid-mode');
-                logToConsole("پروتکل دایرکت سطح پایین WebHID فعال گردید. آماده خط فرمان رایت حافظه.");
-            }
-        }
-
-        function logToConsole(msg) {
-            const el = document.getElementById('sysLog');
-            el.innerHTML += `\n[${new Date().toLocaleTimeString('fa-IR')}] ${msg}`;
-            el.scrollTop = el.scrollHeight;
-        }
-
-        // Calibration wizard dynamic logic & graphics controller
-        const stepConfigs = {
-            1: {
-                title: "مرحله ۱: بررسی کانال های ارتباطی USB",
-                desc: "از اتصال کامل کابل دیتا مطمئن شوید. سیستم آماده دریافت اطلاعات و کدهای خام فریمور است.",
-                btn: "شروع همگام‌سازی مرکزی",
-                graphic: '<div class="pulse-circle"></div>'
-            },
-            2: {
-                title: "مرحله ۲: محاسبه خودکار و تراز نقطه صفر (Auto-Zero Alignment)",
-                desc: "لطفاً به آنالوگ‌ها دست نزنید. الگوریتم در حال آنالیز لرزش‌های ولتاژ پتانسیومترها و خنثی کردن فیزیکی آفست دریفت است.",
-                btn: "تایید مرکز و رفتن به فاز زوایا",
-                graphic: '<div style="color:var(--warning); font-size:24px; font-weight:bold;">[ + ] تراز مرکز</div>'
-            },
-            3: {
-                title: "مرحله ۳: اصلاح دامنه زوایا و کالیبره دایره حرکتی (Circularity Tuning)",
-                desc: "هر دو آنالوگ را دو بار به صورت کامل تا انتها بچرخانید. سنسور گرافیکی زیر میزان یکنواختی زوایای دایره را به صورت زنده نمایش می‌دهد.",
-                btn: "محاسبه نهایی ماتریس خطی",
-                graphic: '<div class="fill-track-ui"><div class="fill-progress-arc" id="arcUi"></div></div>'
-            },
-            4: {
-                title: "مرحله ۴: ثبت نهایی و رایت پایدار داده‌ها در EEPROM",
-                content: "عملیات با موفقیت پایان یافت! اطلاعات کالیبراسیون جدید روی چیپست نوشته شد و خطای جابجایی صفر گردید.",
-                btn: "شروع مجدد پروسه کالیبره",
-                graphic: '<div style="color:var(--success); font-size:40px;">✔</div>'
-            }
-        };
-
-        document.getElementById('btnNextWiz').addEventListener('click', () => {
-            document.getElementById(`sn-${wizardStep}`).classList.remove('active');
-            document.getElementById(`sn-${wizardStep}`).classList.add('completed');
-            
-            if (wizardStep < 4) {
-                wizardStep++;
-            } else {
-                wizardStep = 1;
-                document.querySelectorAll('.step-node').forEach(n => n.classList.remove('active', 'completed'));
-            }
-            
-            document.getElementById(`sn-${wizardStep}`).classList.add('active');
-            const conf = stepConfigs[wizardStep];
-            document.getElementById('wizTitle').innerText = conf.title;
-            document.getElementById('wizDesc').innerText = conf.desc || conf.content;
-            document.getElementById('btnNextWiz').innerText = conf.btn;
-            document.getElementById('wizGraphic').innerHTML = conf.graphic;
-            
-            logToConsole(`مرحله جادوگر کالیبراسیون تغییر کرد: ${conf.title}`);
-        });
-
-        // Vectors Canvas Layout Handler
-        function drawVectorField(id, x, y) {
-            const canvas = document.getElementById(id);
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            canvas.width = 220;
-            canvas.height = 220;
-            
-            ctx.clearRect(0,0,220,220);
-            const cx = 110, cy = 110, r = 90;
-            
-            // Grid Lines
-            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-            ctx.lineWidth = 1;
-            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
-            ctx.beginPath(); ctx.arc(cx, cy, r*0.5, 0, Math.PI*2); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(cx, 10); ctx.lineTo(cx, 210); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(10, cy); ctx.lineTo(210, cy); ctx.stroke();
-            
-            // Target Node
-            const tx = cx + (x * r);
-            const ty = cy + (y * r);
-            
-            ctx.fillStyle = 'rgba(59, 130, 246, 0.2)';
-            ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill();
-            
-            ctx.fillStyle = '#3b82f6';
-            ctx.shadowBlur = 8; ctx.shadowColor = '#3b82f6';
-            ctx.beginPath(); ctx.arc(tx, ty, 6, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0;
-        }
-
-        // Main Refresh Animation Loop Frame
-        function processFrames() {
-            const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-            let pad = null;
-            for(let i=0; i<gamepads.length; i++) {
-                if(gamepads[i]) { pad = gamepads[i]; break; }
-            }
-
-            let lx=0, ly=0, rx=0, ry=0;
-
-            if (pad) {
-                lx = pad.axes[0] || 0;
-                ly = pad.axes[1] || 0;
-                rx = pad.axes[2] || 0;
-                ry = pad.axes[3] || 0;
-
-                // Map digital buttons to schematic visual representation directly
-                pad.buttons.forEach((b, idx) => {
-                    const el = document.getElementById(`m-btn-${idx}`);
-                    if (el) {
-                        if (b.pressed) el.classList.add('active');
-                        else el.classList.remove('active');
-                    }
-                });
-            } else {
-                // Smooth safe mock wave behaviors for standalone offline showcase representation
-                angleSeed += 0.025;
-                if (wizardStep === 3) {
-                    lx = Math.cos(angleSeed) * 0.98;
-                    ly = Math.sin(angleSeed) * 0.98;
-                    // Rotate custom arc visualization on step 3 graphical window
-                    const arcEl = document.getElementById('arcUi');
-                    if(arcEl) arcEl.style.transform = `rotate(${angleSeed * 50}deg)`;
-                } else {
-                    lx = Math.cos(angleSeed) * 0.12 * Math.sin(angleSeed*1.5);
-                    ly = Math.sin(angleSeed) * 0.08;
-                }
-                rx = Math.sin(angleSeed * 0.8) * 0.05;
-                ry = Math.cos(angleSeed * 0.6) * 0.07;
-            }
-
-            // Update numerical metrics
-            document.getElementById('md-lx').innerText = lx.toFixed(3);
-            document.getElementById('md-rx').innerText = rx.toFixed(3);
-
-            // Render vectors maps
-            drawVectorField('cLeft', lx, ly);
-            drawVectorField('cRight', rx, ry);
-
-            // Dynamically translate joystick visual layout components
-            document.getElementById('t-left').style.transform = `translate(${lx * 12}px, ${ly * 12}px)`;
-            document.getElementById('t-right').style.transform = `translate(${rx * 12}px, ${ry * 12}px)`;
-
-            requestAnimationFrame(processFrames);
-        }
-
-        // Initialize engine framework runtime loop
-        processFrames();
-    </script>
+    <script src="app.js"></script>
 </body>
 </html>
