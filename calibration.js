@@ -1,120 +1,115 @@
 /**
  * سامانه هوشمند تست و کالیبراسیون سخت‌افزار
- * هسته محاسبات ریاضی، فیلتر ددزون و آنالیز هندسی ۳۶۰ درجه (calibration.js)
+ * موتور محاسبات ریاضی، ددزون و آنالیز هندسی ۳۶۰ درجه (calibration.js)
  * توسعه یافته برای اتصال بومی به هسته: Fix.Peyman24x.ir
  */
 
 const CalibrationEngine = {
-    // ۱. پارامترهای پیش‌فرض مهندسی سیگنال و کالیبراسیون سخت‌افزار
+    // ۱. پارامترهای پیش‌فرض مهندسی سیگنال
     Config: {
         DEADZONE_THRESHOLD: 0.05,     // حد آستانه صفر مطلق برای تراز مرکز (مرحله ۲ جادوگر)
-        SATURATION_LIMIT: 1.0,        // سقف بردار نرمالایز شده خروجی سخت‌افزار
-        IDEAL_RADIUS: 1.0             // شعاع دایره مرجع کالیبراسیون کامل و بی‌نقص
+        SATURATION_LIMIT: 1.0,        // سقف بردار نرمالایز شده خروجی
+        IDEAL_RADIUS: 1.0             // شعاع دایره مرجع کالیبراسیون کامل
     },
 
     // ۲. الگوریتم محاسبه خطای هندسی دایره (Circular Error / Average Deviation)
-    // این فرمول به طور دقیق میزان انحراف آنی استیک از دایره ایده‌آل ۱.0 را محاسبه می‌کند
+    // این فرمول به طور دقیق میزان انحراف استیک از دایره ایده آل را محاسبه می‌کند
     calculateCircularError(x, y) {
-        if (x === 0 && y === 0) return 0;
-        
-        // محاسبه طول بردار فیزیکی استیک (قضیه فیثاغورس)
+        // محاسبه طول بردار فیزیکی (قضیه فیثاغورس)
         const magnitude = Math.sqrt(x * x + y * y);
         
-        // میزان انحراف خالص سخت‌افزاری از شعاع استاندارد ۱.۰ دایره مرجع
+        // رفع باگ بزرگ UX: اگر استیک رها شده یا درون ددزون باشد، خطای محیطی نباید ۱۰۰٪ رندر شود
+        if (magnitude < this.Config.DEADZONE_THRESHOLD) return 0;
+        
+        // میزان انحراف خالص از شعاع استاندارد ۱.۰
         const deviation = Math.abs(magnitude - this.Config.IDEAL_RADIUS);
         
-        // تبدیل انحراف هندسی به درصد خطا جهت نمایش به تکنسین
+        // تبدیل انحراف به درصد خطا
         let errorPercentage = deviation * 100;
         
-        // فیلتر نویزهای فرکانس بالای پتانسیومتر برای مانیتورینگ پایدار و بدون نوسان پرش لب‌ها
-        if (errorPercentage < 0.01) errorPercentage = 0;
+        // فیلتر کردن نویزهای بسیار ریز پتانسیومتر برای نمایش دقیق‌تر
+        if (errorPercentage < 0.1) errorPercentage = 0;
         if (errorPercentage > 100) errorPercentage = 100;
         
         return errorPercentage;
     },
 
     // ۳. الگوریتم اعمال حد آستانه حرکت مرده (Radial Deadzone Filter)
-    // جهت حذف کامل نوسانات ریز (Drift) در زمانی که کاربر به آنالوگ استیک دست نمی‌زند
+    // برای جلوگیری از دریفت (Drift) در زمانی که کاربر به استیک دست نمی‌زند
     applyRadialDeadzone(x, y) {
         const magnitude = Math.sqrt(x * x + y * y);
         
-        // اگر طول بردار کمتر از آستانه ددزون باشد، استیک کاملاً در مرکز فرض می‌شود (دریفت صفر مطلق)
         if (magnitude < this.Config.DEADZONE_THRESHOLD) {
-            return { x: 0, y: 0, isCentered: true, magnitude: 0 };
+            return { x: 0, y: 0, isCentered: true };
         }
         
-        // نگاشت خطی مجدد (Rescaling) پوزیشن استیک برای حفظ پیوستگی شتاب و حرکت پس از عبور از محدوده ددزون
+        // نرمالایز کردن مجدد وکتور بیرونی برای حفظ دقت خطی حرکت
         const scale = ((magnitude - this.Config.DEADZONE_THRESHOLD) / (this.Config.SATURATION_LIMIT - this.Config.DEADZONE_THRESHOLD)) / magnitude;
         
         let finalX = x * scale;
         let finalY = y * scale;
         
-        // اشباع و کلمپ کردن سقف خروجی دیتای آنالوگ در بازه استاندارد [-1.0 , 1.0]
+        // محدود کردن سقف خروجی به ۱.۰- تا ۱.۰+
         finalX = Math.max(-1, Math.min(1, finalX));
         finalY = Math.max(-1, Math.min(1, finalY));
         
-        return { 
-            x: finalX, 
-            y: finalY, 
-            isCentered: false,
-            magnitude: Math.sqrt(finalX * finalX + finalY * finalY)
-        };
+        return { x: finalX, y: finalY, isCentered: false };
     },
 
-    // ۴. ماتریس هوشمند جهت‌شناسی جغرافیایی ۳۶۰ درجه (مرحله ۳ جادوگر کالیبراسیون)
-    // این تابع موقعیت لبه سخت‌افزار را آنالیز کرده و فلگ‌های وضعیت را در کلاستر جهت‌ها فعال می‌کند
+    // ۴. ماتریس هوشمند جهت‌شناسی جغرافیایی ۳۶۰ درجه (مرحله ۳ جادوگر)
+    // این تابع پوزیشن آنالوگ را آنالیز کرده و به طور خودکار فلگ‌های جهت را فعال می‌کند
     trackStickDirections(x, y, stateMatrix) {
-        const triggerThreshold = 0.85; // تعمیرکار باید استیک را حداقل ۸۵٪ به لبه‌ها نزدیک کند تا جهت جغرافیایی ثبت شود
+        if (!stateMatrix) return false; // لایه امنیتی برای جلوگیری از کرش موتور در صورت عدم تخصیص استیت
+        
+        const triggerThreshold = 0.85; // کاربر باید استیک را حداقل ۸۵٪ به لبه‌ها نزدیک کند تا جهت ثبت شود
         let updated = false;
 
-        // توجه فنی: در ساختار کانواس و پروتکل استاندارد وب، جهت شمال (North) دارای مقدار Y منفی است
-        // الف) آنالیز جهت شمال (North)
+        // بهینه‌سازی: تبدیل به شروط مستقل ساختاری جهت پایش همزمان و بدون تاخیر چرخش‌های سریع
+        // آنالیز جهت شمال (North: Y منفی در ساختار کانواس / Gamepad API)
         if (y < -triggerThreshold && Math.abs(x) < 0.40) {
             if (!stateMatrix.n) { stateMatrix.n = true; updated = true; }
         }
-        // ب) آنالیز جهت جنوب (South)
-        else if (y > triggerThreshold && Math.abs(x) < 0.40) {
+        // آنالیز جهت جنوب (South: Y مثبت)
+        if (y > triggerThreshold && Math.abs(x) < 0.40) {
             if (!stateMatrix.s) { stateMatrix.s = true; updated = true; }
         }
-        // ج) آنالیز جهت شرق (East)
-        else if (x > triggerThreshold && Math.abs(y) < 0.40) {
+        // آنالیز جهت شرق (East: X مثبت)
+        if (x > triggerThreshold && Math.abs(y) < 0.40) {
             if (!stateMatrix.e) { stateMatrix.e = true; updated = true; }
         }
-        // د) آنالیز جهت غرب (West)
-        else if (x < -triggerThreshold && Math.abs(y) < 0.40) {
+        // آنالیز جهت غرب (West: X منفی)
+        if (x < -triggerThreshold && Math.abs(y) < 0.40) {
             if (!stateMatrix.w) { stateMatrix.w = true; updated = true; }
         }
 
-        return updated; // بازگرداندن وضعیت کشف گام جدید در چرخه ۳۶۰ درجه برای مدیریت UI
+        return updated; // اگر جهت جدیدی کشف و ثبت شد، مقدار true برمی‌گردد
     },
 
-    // ۵. ارزیابی تراز صفر مطلق سخت‌افزاری (فاز دوم جادوگر: همگام‌سازی تراز مرکز)
+    // ۵. ارزیابی تراز صفر مطلق سخت‌افزاری (برای فاز دوم جادوگر)
     checkCenterAlignment(leftX, leftY, rightX, rightY) {
         const leftOffset = Math.sqrt(leftX * leftX + leftY * leftY);
         const rightOffset = Math.sqrt(rightX * rightX + rightY * rightY);
         
-        // بررسی قرارگیری دقیق هر دو استیک در محدوده امن ددزون بدون نیاز به لمس پتانسیومتر توسط تعمیرکار
+        // هر دو آنالوگ باید کاملاً در محدوده ددزون مجاز (زیر ۰.۰۵) بی حرکت باشند
         const isLeftCentered = leftOffset < this.Config.DEADZONE_THRESHOLD;
         const isRightCentered = rightOffset < this.Config.DEADZONE_THRESHOLD;
         
         return {
             isValid: isLeftCentered && isRightCentered,
+            leftRawOffset: leftOffset,
+            rightRawOffset: rightOffset,
             leftOffset: leftOffset.toFixed(4),
             rightOffset: rightOffset.toFixed(4)
         };
     },
 
-    // ۶. متریک تخصصی استخراج پالت رنگی داینامیک رابط کاربری براساس درصد خطای انحراف استیک
+    // ۶. فرمول تبدیل خطا به پالت رنگی داینامیک رابط کاربری (UI Feedback Color)
     getErrorColorClass(errorPercentage) {
-        if (errorPercentage <= 5.0) {
-            return 'error-green';     // خطای فوق‌العاده عالی زیر ۵ درصد (مخصوص سنسورهای اثرهال یا آنالوگ نو اورجینال)
-        }
-        if (errorPercentage <= 12.0) {
-            return 'error-warning';   // خطای استاندارد و پذیرفته شده (پتانسیومترهای فابریک کارکرده و ذغال‌های سالم)
-        }
-        return 'error-danger';         // انحراف بحرانی و خارج از استاندارد (دریفت شدید، سایش شدید مغزی یا خرابی فیزیکی سخت‌افزار)
+        if (errorPercentage <= 5) return 'error-green';    // خطای عالی و زیر ۵ درصد (مخصوص هال افکت و سنسور نو)
+        if (errorPercentage <= 12) return 'error-warning'; // خطای متوسط و پذیرفته شده (پتانسیومترهای کارکرده استاندارد)
+        return 'error-danger';                             // دریفت شدید یا خرابی فیزیکی زغال مغزی استیک
     }
 };
 
-// قرار دادن هسته محاسباتی در اسکوپ سراسری پنجره جهت پایش و دسترسی مستقیم توسط لوپ‌های فریم گرافیکی در app.js
+// قرار دادن موتور محاسباتی در اسکوپ سراسری پنجره برای دسترسی مستقیم توسط فریم‌های گرافیکی app.js
 window.CalibrationEngine = CalibrationEngine;
