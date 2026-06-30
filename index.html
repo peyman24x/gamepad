@@ -52,7 +52,10 @@
                     ⚠️ <strong>عدم پشتیبانی پروتکل فعلی:</strong> اطلاعات سطح شارژ دقیق و منبع تغذیه الکتریکی در این حالت در دسترس نیست. لطفا برای دسترسی به پکت‌های خام فریمور، روی دکمه <strong>Low-Level WebHID</strong> کلیک کنید.
                 </div>
 
-                <div class="terminal-box" id="sysLog">[سیستم] هسته مرکزی Fix آماده دریافت کابل سخت‌افزار است.<br>[سیستم] برای شروع فرآیند، کنترلر را متصل کرده و دکمه‌ای را فشار دهید.</div>
+                <div class="terminal-box" id="sysLog">
+[سیستم] هسته مرکزی Fix آماده دریافت کابل سخت‌افزار است.
+[سیستم] برای شروع فرآیند، کنترلر را متصل کرده و دکمه‌ای را فشار دهید.
+                </div>
             </div>
 
             <div class="card device-dependent firmware-spec-card">
@@ -94,7 +97,7 @@
             <div class="card device-dependent gamepad-visualizer-card">
                 <div class="card-title">نقشه فیزیکی زنده و ماتریس پاسخ سخت‌افزاری</div>
                 
-                <div class="gamepad-illustration-container">
+                <div class="gamepad-illustration-card">
                     <div class="gamepad-container">
                         <div class="shoulder-btn s-l1" id="m-btn-4"></div>
                         <div class="shoulder-btn s-r1" id="m-btn-5"></div>
@@ -128,20 +131,20 @@
 
                 <div class="sticks-dashboard">
                     <div class="canvas-container">
-                        <div class="canvas-label">بردار آنالوگ چپ (مختصات خطی)</div>
-                        <div class="canvas-frame"><canvas id="cLeft"></canvas></div>
-                        <div class="metric-row">
-                            <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-l-coords">0.00 / 0.00</div></div>
-                            <div class="metric-item">خطای هندسی دایره<div class="metric-num error-green" id="md-le">0.00%</div></div>
-                        </div>
-                    </div>
-
-                    <div class="canvas-container">
                         <div class="canvas-label">بردار آنالوگ راست (مختصات خطی)</div>
                         <div class="canvas-frame"><canvas id="cRight"></canvas></div>
                         <div class="metric-row">
                             <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-r-coords">0.00 / 0.00</div></div>
                             <div class="metric-item">خطای هندسی دایره<div class="metric-num error-green" id="md-re">0.00%</div></div>
+                        </div>
+                    </div>
+
+                    <div class="canvas-container">
+                        <div class="canvas-label">بردار آنالوگ چپ (مختصات خطی)</div>
+                        <div class="canvas-frame"><canvas id="cLeft"></canvas></div>
+                        <div class="metric-row">
+                            <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-l-coords">0.00 / 0.00</div></div>
+                            <div class="metric-item">خطای هندسی دایره<div class="metric-num error-green" id="md-le">0.00%</div></div>
                         </div>
                     </div>
                 </div>
@@ -169,7 +172,7 @@
                         <div class="wizard-graphic-feedback" id="wizGraphic">
                             <div class="correctness-indicator waiting" id="vIndicator">⏳</div>
                             
-                            <div class="angle-tracker-ui" id="angleTrackerUi" style="display: none;">
+                            <div class="angle-tracker-ui" id="angleTrackerUi">
                                 <div class="tracker-stick-box">
                                     <span>آنالوگ چپ</span>
                                     <div class="direction-indicators">
@@ -198,6 +201,7 @@
                     <button class="btn-action btn-wiz-next" id="btnNextWiz" disabled>شروع همگام‌سازی تراز مرکز</button>
                 </div>
             </div>
+
         </section>
     </main>
 
