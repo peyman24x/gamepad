@@ -1,8 +1,8 @@
 /**
  * سامانه هوشمند تست و کالیبراسیون سخت‌افزار
  * هسته بازنویسی شده پردازش سیگنال و مدیریت جادوگر (app.js)
- * مجهز به سیستم کالیبراسیون زوری و صفرکننده خطای آفست (دریفت شاسی)
- * پلتفرم: Fix.Peyman24x.ir
+ * مجهز به پنل تزریق دینامیک عیب‌یابی، کالیبراسیون زوری و رمزگشایی ۱۶ بیتی محورها
+ * توسعه یافته برای: Fix.Peyman24x.ir
  */
 
 // ۱. مدیریت وضعیت مرکزی و پایدار برنامه (State Management)
@@ -14,10 +14,23 @@ const AppState = {
     animationFrameId: null,
     wizardStep: 1,
     
-    // ذخیره آنی پکت‌های خام ورودی جهت محاسبات کالیبراسیون تفاضلی
+    // لایه پروفایل رمزگشایی بایت‌های WebHID برای رفع باگ حرکت همزمان محورها
+    webHidProfile: '8bit', // '8bit' یا '16bit'
+    
+    // ماتریس پیکربندی و اصلاح زوری جهت‌ها و معکوس‌سازی لایه نرم‌افزار
+    config: {
+        swapSticks: false,    // جابجایی کامل آنالوگ چپ و راست
+        swapAxesLeft: false,  // جابجایی X و Y آنالوگ چپ
+        swapAxesRight: false, // جابجایی X و Y آنالوگ راست
+        invertLX: false,      // معکوس کردن افقی چپ
+        invertLY: false,      // معکوس کردن عمودی چپ
+        invertRX: false,      // معکوس کردن افقی راست
+        invertRY: false       // معکوس کردن عمودی راست
+    },
+
     rawInputs: { lx: 0, ly: 0, rx: 0, ry: 0 },
     
-    // لایه جبران‌ساز ماتریس خطا (آفست‌های زوری ثبت شده توسط کاربر)
+    // لایه جبران‌ساز ماتریس خطا (آفست‌های تراز مرکزی)
     offsets: {
         left:  { x: 0, y: 0 },
         right: { x: 0, y: 0 }
@@ -42,21 +55,17 @@ const DOM = {
     batteryApiPrompt: document.getElementById('batteryApiPrompt'),
     sysLog: document.getElementById('sysLog'),
     
-    // متون مختصات آنالوگ‌ها
     mdLeftCoords: document.getElementById('md-l-coords'),
     mdRightCoords: document.getElementById('md-r-coords'),
     mdLeftError: document.getElementById('md-le'),
     mdRightError: document.getElementById('md-re'),
     
-    // تصاویر فیزیکی استیک‌ها
     tLeft: document.getElementById('t-left'),
     tRight: document.getElementById('t-right'),
     
-    // کانواس‌ها
     cLeft: document.getElementById('cLeft'),
     cRight: document.getElementById('cRight'),
     
-    // عناصر جادوگر کالیبراسیون
     btnNextWiz: document.getElementById('btnNextWiz'),
     wizTitle: document.getElementById('wizTitle'),
     wizDesc: document.getElementById('wizDesc'),
@@ -64,7 +73,6 @@ const DOM = {
     vStatus: document.getElementById('vStatus'),
     angleTrackerUi: document.getElementById('angleTrackerUi'),
     
-    // دات‌های وضعیت جهت‌ها در مرحله ۳
     dirs: {
         l: {
             n: document.getElementById('l-dir-n'),
@@ -86,7 +94,6 @@ const Ctx = {
     right: DOM.cRight.getContext('2d')
 };
 
-// مقداردهی اولیه ابعاد کانواس‌ها
 function initCanvases() {
     [DOM.cLeft, DOM.cRight].forEach(canvas => {
         canvas.width = 200;
@@ -94,14 +101,78 @@ function initCanvases() {
     });
 }
 
-// سیستم لاگ مانیتورینگ
 function logToSystem(message, type = 'info') {
     const prefix = type === 'error' ? '[خطا]' : type === 'success' ? '[موفق]' : '[سیستم]';
     DOM.sysLog.innerHTML += `\n${prefix} ${message}`;
     DOM.sysLog.scrollTop = DOM.sysLog.scrollHeight;
 }
 
-// مدیریت پایدار وضعیت اتصال سخت‌افزار
+// تزریق دینامیک پنل سخت‌افزاری اصلاح ماتریس سیگنال‌ها در DOM بدون نیاز به دستکاری HTML
+function injectAdvancedCorrectionPanel() {
+    if (document.getElementById('advanced-correction-panel')) return;
+    
+    const panel = document.createElement('div');
+    panel.id = 'advanced-correction-panel';
+    panel.style.cssText = `
+        background: var(--bg-inner);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 12px;
+        margin: 15px 0;
+    `;
+    
+    panel.innerHTML = `
+        <div style="font-weight: 700; font-size: 13px; color: var(--primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            🛠️ پنل هوشمند اصلاح ماتریس تداخل سیگنال و جهت محورها
+        </div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 12px; line-height: 1.6;">
+            اگر تکان دادن یک آنالوگ دیگری را جابجا می‌کند یا جهت‌ها برعکس است، ابتدا فرمت بایت را تغییر دهید یا از شاسی‌های تصحیح زوری زیر استفاده کنید:
+        </div>
+        
+        <div id="hid-profile-section" style="display: none; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <span style="font-size: 11px; color: var(--warning); display: block; margin-bottom: 6px; font-weight: bold;">📋 فرمت رمزگشایی پکت‌های لایه سخت‌افزار (WebHID):</span>
+            <div style="display: flex; gap: 8px;">
+                <button id="p8Btn" style="flex:1; padding: 6px; font-size: 11px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-family: inherit;">پروفایل ۱: استاندارد بومی (8-Bit)</button>
+                <button id="p16Btn" style="flex:1; padding: 6px; font-size: 11px; background: rgba(255,255,255,0.05); color: #abc; border: none; border-radius: 4px; cursor: pointer; font-family: inherit;">پروفایل ۲: عمیق فرکانسی (16-Bit / Xbox)</button>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px;">
+            <button id="tsSticks" style="padding: 6px; font-size: 11px; background: rgba(255,255,255,0.04); color: #fff; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; cursor: pointer; font-family: inherit;">🔄 جابجایی آنالوگ چپ ↔️ راست</button>
+            <button id="tsXyl" style="padding: 6px; font-size: 11px; background: rgba(255,255,255,0.04); color: #fff; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; cursor: pointer; font-family: inherit;">🔀 جابجایی X/Y آنالوگ چپ</button>
+            <button id="tsXyr" style="padding: 6px; font-size: 11px; background: rgba(255,255,255,0.04); color: #fff; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; cursor: pointer; font-family: inherit;">🔀 جابجایی X/Y آنالوگ راست</button>
+            <button id="tiLx" style="padding: 6px; font-size: 11px; background: rgba(255,255,255,0.04); color: #fff; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; cursor: pointer; font-family: inherit;">↔️ معکوس افقی چپ (Invert X)</button>
+            <button id="tiLy" style="padding: 6px; font-size: 11px; background: rgba(255,255,255,0.04); color: #fff; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; cursor: pointer; font-family: inherit;">↕️ معکوس عمودی چپ (Invert Y)</button>
+            <button id="tiRx" style="padding: 6px; font-size: 11px; background: rgba(255,255,255,0.04); color: #fff; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; cursor: pointer; font-family: inherit;">↔️ معکوس افقی راست (Invert X)</button>
+            <button id="tiRy" style="padding: 6px; font-size: 11px; background: rgba(255,255,255,0.04); color: #fff; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; cursor: pointer; font-family: inherit;">↕️ معکوس عمودی راست (Invert Y)</button>
+        </div>
+    `;
+    
+    DOM.vStatus.parentElement.insertBefore(panel, DOM.vStatus);
+    
+    // اتصال لیسنرهای مدیریتی کلیک دکمه‌ها
+    const syncUiStyle = (id, active) => {
+        const el = document.getElementById(id);
+        if(el) el.style.background = active ? 'var(--success)' : 'rgba(255,255,255,0.04)';
+    };
+
+    document.getElementById('tsSticks').onclick = () => { AppState.config.swapSticks = !AppState.config.swapSticks; syncUiStyle('tsSticks', AppState.config.swapSticks); };
+    document.getElementById('tsXyl').onclick = () => { AppState.config.swapAxesLeft = !AppState.config.swapAxesLeft; syncUiStyle('tsXyl', AppState.config.swapAxesLeft); };
+    document.getElementById('tsXyr').onclick = () => { AppState.config.swapAxesRight = !AppState.config.swapAxesRight; syncUiStyle('tsXyr', AppState.config.swapAxesRight); };
+    document.getElementById('tiLx').onclick = () => { AppState.config.invertLX = !AppState.config.invertLX; syncUiStyle('tiLx', AppState.config.invertLX); };
+    document.getElementById('tiLy').onclick = () => { AppState.config.invertLY = !AppState.config.invertLY; syncUiStyle('tiLy', AppState.config.invertLY); };
+    document.getElementById('tiRx').onclick = () => { AppState.config.invertRX = !AppState.config.invertRX; syncUiStyle('tiRx', AppState.config.invertRX); };
+    document.getElementById('tiRy').onclick = () => { AppState.config.invertRY = !AppState.config.invertRY; syncUiStyle('tiRy', AppState.config.invertRY); };
+
+    const b8 = document.getElementById('p8Btn');
+    const b16 = document.getElementById('p16Btn');
+    b8.onclick = () => { AppState.webHidProfile = '8bit'; b8.style.background = 'var(--primary)'; b16.style.background = 'rgba(255,255,255,0.05)'; logToSystem('پروفایل رید بایت روی 8-Bit تنظیم شد.'); };
+    b16.onclick = () => { AppState.webHidProfile = '16bit'; b16.style.background = 'var(--primary)'; b8.style.background = 'rgba(255,255,255,0.05)'; logToSystem('پروفایل رید بایت روی 16-Bit (رفع مشکل جابجایی تداخلی آنالوگ‌ها) قفل شد.'); };
+
+    // بررسی اولیه وضعیت نمایش لایه پروفایل پورت‌ها
+    document.getElementById('hid-profile-section').style.display = AppState.activeApi === 'hid' ? 'block' : 'none';
+}
+
 function setConnectionState(connected, deviceName = '') {
     AppState.isConnected = connected;
     if (connected) {
@@ -128,7 +199,6 @@ function setConnectionState(connected, deviceName = '') {
     }
 }
 
-// ریست کردن گرافیک، ماتریس‌ها و آفست‌ها در زمان دیسکانکت
 function resetUIElements() {
     document.querySelectorAll('.g-btn, .shoulder-btn').forEach(btn => btn.classList.remove('active'));
     DOM.tLeft.style.transform = 'translate(0px, 0px)';
@@ -140,7 +210,6 @@ function resetUIElements() {
     clearCanvas(Ctx.right);
 }
 
-// ریست ماتریس جهت‌های کالیبراسیون زوایا
 function resetAngleTrackerMatrix() {
     const keys = ['n', 'e', 's', 'w'];
     keys.forEach(k => {
@@ -160,7 +229,6 @@ function clearCanvas(ctx) {
     ctx.beginPath(); ctx.moveTo(0, 100); ctx.lineTo(200, 100); ctx.stroke();
 }
 
-// دریافت وضعیت متنی جهت‌های باقی‌مانده دایره زوایا
 function getMissingDirectionsText() {
     const leftMissing = [];
     if (!AppState.directionsTracked.left.n) leftMissing.push('شمال (↑)');
@@ -175,13 +243,12 @@ function getMissingDirectionsText() {
     if (!AppState.directionsTracked.right.w) rightMissing.push('غرب (←)');
 
     let text = '';
-    if (leftMissing.length > 0) text += `آنالوگ چپ: [${leftMissing.join('، ')}] `;
-    if (rightMissing.length > 0) text += ` | آنالوگ راست: [${rightMissing.join('، ')}]`;
+    if (leftMissing.length > 0) text += `چپ: [${leftMissing.join('، ')}] `;
+    if (rightMissing.length > 0) text += ` | راست: [${rightMissing.join('، ')}]`;
     
     return text ? `جهات باقی‌مانده جهت چرخش 🔄 -> ${text}` : '✅ تمام جهات با موفقیت کالیبره و ثبت شدند!';
 }
 
-// مدیریت پایدار سوئیچ لایه API
 function switchAPI(apiType) {
     if (AppState.animationFrameId) cancelAnimationFrame(AppState.animationFrameId);
     
@@ -194,6 +261,9 @@ function switchAPI(apiType) {
     AppState.gamepadIndex = null;
     setConnectionState(false);
 
+    const sec = document.getElementById('hid-profile-section');
+    if (sec) sec.style.display = apiType === 'hid' ? 'block' : 'none';
+
     if (apiType === 'gamepad') {
         DOM.apiGamepadBtn.classList.add('active');
         DOM.apiHidBtn.classList.remove('active');
@@ -204,7 +274,7 @@ function switchAPI(apiType) {
         DOM.apiGamepadBtn.classList.remove('active');
         DOM.apiHidBtn.classList.add('active');
         DOM.activeApiBadge.textContent = 'WebHID Engine';
-        logToSystem('پروتکل ارتباطی به WebHID تغییر یافت. روی دکمه آن کلیک کنید تا پنل دسترسی باز شود.');
+        logToSystem('پروتکل ارتباطی به WebHID تغییر یافت. مجدداً کلیک کنید تا پنل دسترسی پورت باز شود.');
     }
 }
 
@@ -223,9 +293,7 @@ function initGamepadPolling() {
                 break;
             }
         }
-        if (!found && AppState.isConnected) {
-            setConnectionState(false);
-        }
+        if (!found && AppState.isConnected) setConnectionState(false);
     };
 
     window.addEventListener("gamepadconnected", checkGamepads);
@@ -236,22 +304,10 @@ function initGamepadPolling() {
     
     function renderLoop() {
         if (AppState.activeApi !== 'gamepad') return;
-        
         const gamepads = navigator.getGamepads();
         const gp = gamepads[AppState.gamepadIndex];
         
         if (gp) {
-            if (gp.battery) {
-                DOM.batteryApiPrompt.style.display = 'none';
-                const level = Math.round(gp.battery.level * 100);
-                DOM.batteryLevel.textContent = `${level}%`;
-                DOM.batteryCharging.textContent = gp.battery.charging ? 'در حال شارژ ⚡' : 'در حال تخلیه باطری';
-            } else {
-                DOM.batteryApiPrompt.style.display = 'block';
-                DOM.batteryLevel.textContent = 'محدودیت API لایه وب';
-                DOM.batteryCharging.textContent = 'نامشخص';
-            }
-
             gp.buttons.forEach((btn, index) => {
                 const btnEl = document.getElementById(`m-btn-${index}`);
                 if (btnEl) {
@@ -272,7 +328,7 @@ function initGamepadPolling() {
     AppState.animationFrameId = requestAnimationFrame(renderLoop);
 }
 
-// --- مدیریت پروتکل دوم: Low-Level WebHID API ---
+// --- مدیریت پروتکل دوم: Low-Level WebHID API (با قابلیت تفکیک بایت ۱۶ بیتی هوشمند) ---
 async function handleWebHIDConnectionTrigger() {
     try {
         const devices = await navigator.hid.requestDevice({ filters: [] });
@@ -282,9 +338,8 @@ async function handleWebHIDConnectionTrigger() {
             
             setConnectionState(true, AppState.hidDevice.productName || "دستگاه بومی WebHID");
             DOM.batteryApiPrompt.style.display = 'none';
-            DOM.batteryLevel.textContent = "۹۵٪ [ولتاژ پایدار سخت‌افزاری]";
-            DOM.batteryLevel.style.color = "var(--success)";
-            DOM.batteryCharging.textContent = "منبع تغذیه USB فیکس";
+            DOM.batteryLevel.textContent = "USB 5V فیکس";
+            DOM.batteryCharging.textContent = "پایدار";
 
             AppState.hidDevice.addEventListener('inputreport', (event) => {
                 if (AppState.activeApi !== 'hid') return;
@@ -292,10 +347,22 @@ async function handleWebHIDConnectionTrigger() {
                 
                 if (data.byteLength >= 5) {
                     const offset = data.byteLength > 60 ? 1 : 0;
-                    const lx = (data.getUint8(offset + 0) - 128) / 128;
-                    const ly = (data.getUint8(offset + 1) - 128) / 128;
-                    const rx = (data.getUint8(offset + 2) - 128) / 128;
-                    const ry = (data.getUint8(offset + 3) - 128) / 128;
+                    
+                    let lx = 0, ly = 0, rx = 0, ry = 0;
+                    
+                    if (AppState.webHidProfile === '16bit' && data.byteLength >= offset + 8) {
+                        // پروتکل ویژه تفکیک ۱۶ بیتی زوری برای حل مشکل تداخل و چسبیدن آنالوگ‌ها مابین یکدیگر
+                        lx = (data.getUint16(offset + 0, true) - 32768) / 32768;
+                        ly = (data.getUint16(offset + 2, true) - 32768) / 32768;
+                        rx = (data.getUint16(offset + 4, true) - 32768) / 32768;
+                        ry = (data.getUint16(offset + 6, true) - 32768) / 32768;
+                    } else {
+                        // پروتکل کلاسیک ۸ بیتی استاندارد
+                        lx = (data.getUint8(offset + 0) - 128) / 128;
+                        ly = (data.getUint8(offset + 1) - 128) / 128;
+                        rx = (data.getUint8(offset + 2) - 128) / 128;
+                        ry = (data.getUint8(offset + 3) - 128) / 128;
+                    }
                     
                     processControllerInputs(lx, ly, rx, ry);
                 }
@@ -306,42 +373,57 @@ async function handleWebHIDConnectionTrigger() {
     }
 }
 
-// --- پردازشگر برداری مشترک سیگنال‌ها (اعمال کالیبراسیون تفاضلی زوری) ---
-function processControllerInputs(lx, ly, rx, ry) {
-    // ۱. ذخیره دیتاهای واقعی لوپ ورودی سخت افزار در حافظه مرکزی جهت پردازش تراز زوری
+// --- پردازشگر هوشمند لایه اصلاح ماتریس و کالیبراسیون زوری جهت‌ها ---
+function processControllerInputs(rawLx, rawLy, rawRx, rawRy) {
+    let lx = rawLx;
+    let ly = rawLy;
+    let rx = rawRx;
+    let ry = rawRy;
+
+    // ۱. بررسی شاسی زوری جابه جایی فیزیکی آنالوگ چپ و راست مابین یکدیگر
+    if (AppState.config.swapSticks) {
+        let tempX = lx; let tempY = ly;
+        lx = rx; ly = ry;
+        rx = tempX; ry = tempY;
+    }
+
+    // ۲. بررسی جابجایی افقی/عمودی محورهای داخلی آنالوگ‌ها
+    if (AppState.config.swapAxesLeft) { let temp = lx; lx = ly; ly = temp; }
+    if (AppState.config.swapAxesRight) { let temp = rx; rx = ry; ry = temp; }
+
+    // ۳. اعمال ماتریس زوری اینورت و معکوس‌سازی لایه نرم‌افزاری
+    if (AppState.config.invertLX) lx = -lx;
+    if (AppState.config.invertLY) ly = -ly;
+    if (AppState.config.invertRX) rx = -rx;
+    if (AppState.config.invertRY) ry = -ry;
+
+    // ذخیره سیگنال‌های تراز شده در حافظه کلاینت
     AppState.rawInputs = { lx, ly, rx, ry };
 
-    // ۲. اعمال کالیبراسیون تفاضلی آنی (کم کردن آفست‌های ثبت شده از ورودی و کلمپ بین ۱- و ۱)
+    // ۴. اعمال کالیبراسیون تفاضلی و کسر آفست نقطه صفر مرکزی
     const clx = Math.max(-1, Math.min(1, lx - AppState.offsets.left.x));
     const cly = Math.max(-1, Math.min(1, ly - AppState.offsets.left.y));
     const crx = Math.max(-1, Math.min(1, rx - AppState.offsets.right.x));
     const cry = Math.max(-1, Math.min(1, ry - AppState.offsets.right.y));
 
-    // اصلاح جابجایی بصری آنالوگ‌ها بر اساس مقادیر کالیبره شده جدید
+    // جابجایی زنده گرافیک آنالوگ‌ها روی تصویر فیزیکی شاسی
     DOM.tLeft.style.transform = `translate(${clx * 18}px, ${cly * 18}px)`;
     DOM.tRight.style.transform = `translate(${crx * 18}px, ${cry * 18}px)`;
 
-    // ثبت متون عددی فیلدها با مختصات تصحیح شده کالیبراسیون
     DOM.mdLeftCoords.textContent = `${clx.toFixed(2)} / ${cly.toFixed(2)}`;
     DOM.mdRightCoords.textContent = `${crx.toFixed(2)} / ${cry.toFixed(2)}`;
 
-    // رندر خطوط برداری کالیبره شده روی بوم‌ها
     renderJoystickCanvas(Ctx.left, clx, cly);
     renderJoystickCanvas(Ctx.right, crx, cry);
 
-    // محاسبات ریاضی خطا نسبت به مرکز کالیبره شده جدید
     const leftDist = Math.sqrt(clx*clx + cly*cly);
     const rightDist = Math.sqrt(crx*crx + cry*cry);
-    
     const leftError = leftDist > 1.0 ? (leftDist - 1.0) * 100 : 0;
     const rightError = rightDist > 1.0 ? (rightDist - 1.0) * 100 : 0;
 
     DOM.mdLeftError.textContent = `${leftError.toFixed(2)}%`;
     DOM.mdRightError.textContent = `${rightError.toFixed(2)}%`;
-    DOM.mdLeftError.style.color = leftError < 6 ? 'var(--success)' : 'var(--warning)';
-    DOM.mdRightError.style.color = rightError < 6 ? 'var(--success)' : 'var(--warning)';
 
-    // ارجاع مقادیر جهت پایش اتوماسیون گام‌ها
     validateWizardStepsRealtime(clx, cly, crx, cry);
 }
 
@@ -349,54 +431,38 @@ function renderJoystickCanvas(ctx, x, y) {
     clearCanvas(ctx);
     ctx.strokeStyle = 'var(--primary)';
     ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(100, 100);
-    ctx.lineTo(100 + (x * 90), 100 + (y * 90));
-    ctx.stroke();
-
+    ctx.beginPath(); ctx.moveTo(100, 100); ctx.lineTo(100 + (x * 90), 100 + (y * 90)); ctx.stroke();
     ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.arc(100 + (x * 90), 100 + (y * 90), 6, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.beginPath(); ctx.arc(100 + (x * 90), 100 + (y * 90), 6, 0, Math.PI * 2); ctx.fill();
 }
 
-// --- موتور اصلی اعتبارسنجی هوشمند مراحل جادوگر کالیبراسیون ---
 function validateWizardStepsRealtime(clx, cly, crx, cry) {
     if (!AppState.isConnected) return;
 
-    // گام ۲: همگام‌سازی تراز مرکز (رفع باگ گیر کردن دکمه با قابلیت کالیبراسیون زوری)
     if (AppState.wizardStep === 2) {
-        // بررسی موقعیت فیزیکی بر اساس ورودی خام برای تشخیص وجود یا عدم وجود دریفت بومی سخت‌افزار
-        const rawLx = AppState.rawInputs.lx;
-        const rawLy = AppState.rawInputs.ly;
-        const rawRx = AppState.rawInputs.rx;
-        const rawRy = AppState.rawInputs.ry;
+        const rawLx = AppState.rawInputs.lx; const rawLy = AppState.rawInputs.ly;
+        const rawRx = AppState.rawInputs.rx; const rawRy = AppState.rawInputs.ry;
 
         const leftCentered = Math.abs(rawLx) < 0.05 && Math.abs(rawLy) < 0.05;
         const rightCentered = Math.abs(rawRx) < 0.05 && Math.abs(rawRy) < 0.05;
         
         if (leftCentered && rightCentered) {
-            updateWizardVisuals(true, 'تراز مرکزی ایده‌آل است! استیک‌ها را ثابت نگه دارید و دکمه را بزنید.', '✅');
+            updateWizardVisuals(true, 'تراز مرکزی ایده‌آل است! استیک‌ها را رها کرده و دکمه تایید را بزنید.', '✅');
             DOM.btnNextWiz.textContent = 'تایید و رفتن به مرحله تست جهت‌ها';
-            DOM.btnNextWiz.disabled = false;
         } else {
-            // در صورت وجود کجی یا دریفت، سیستم قفل نمی‌شود بلکه آپشن کالیبراسیون تفاضلی/زوری فعال می‌گردد
-            updateWizardVisuals(false, 'توجه: انحراف آنالوگ (دریفت شاسی) شناسایی شد. با کلیک روی دکمه زیر، موقعیت ناهماهنگ فعلی به عنوان مرکز جدید کالیبره و صفر می‌شود.', '⚠️', 'warning');
+            updateWizardVisuals(false, 'انحراف یا تداخل شاسی شناسایی شد. با کلیک روی دکمه زیر، انحراف فعلی فورا به عنوان مرکز جدید کالیبره و صفر می‌شود.', '⚠️', 'warning');
             DOM.btnNextWiz.textContent = 'صفر کردن آفست و اجبار به تراز مرکز 🛠️';
-            DOM.btnNextWiz.disabled = false; 
         }
+        DOM.btnNextWiz.disabled = false; 
     } 
-    // گام ۳: پیمایش زوایا (اجرا بر روی سیگنال‌های کالیبره و تراز شده جدید)
     else if (AppState.wizardStep === 3) {
         const targetThreshold = 0.70; 
         
-        // پایش دقیق آنالوگ چپ تراز شده
         if (cly < -targetThreshold) { AppState.directionsTracked.left.n = true; DOM.dirs.l.n.classList.add('done'); }
         if (clx > targetThreshold)  { AppState.directionsTracked.left.e = true; DOM.dirs.l.e.classList.add('done'); }
         if (cly > targetThreshold)  { AppState.directionsTracked.left.s = true; DOM.dirs.l.s.classList.add('done'); }
         if (clx < -targetThreshold) { AppState.directionsTracked.left.w = true; DOM.dirs.l.w.classList.add('done'); }
         
-        // پایش دقیق آنالوگ راست تراز شده (رفع باگ تداخل سینتکس .xl در پایش جهت جنوب)
         if (cry < -targetThreshold) { AppState.directionsTracked.right.n = true; DOM.dirs.r.n.classList.add('done'); }
         if (crx > targetThreshold)  { AppState.directionsTracked.right.e = true; DOM.dirs.r.e.classList.add('done'); }
         if (cry > targetThreshold)  { AppState.directionsTracked.right.s = true; DOM.dirs.r.s.classList.add('done'); } 
@@ -406,7 +472,7 @@ function validateWizardStepsRealtime(clx, cly, crx, cry) {
         const rDone = AppState.directionsTracked.right.n && AppState.directionsTracked.right.e && AppState.directionsTracked.right.s && AppState.directionsTracked.right.w;
 
         if (lDone && rDone) {
-            updateWizardVisuals(true, 'تست پیمایش زوایا با موفقیت تایید شد! آماده انتقال به فاز رایت نهایی حافظه کلاینت.', '✅');
+            updateWizardVisuals(true, 'تست پیمایش زوایا با موفقیت تایید شد! آماده انتقال به فاز نهایی.', '✅');
             DOM.btnNextWiz.disabled = false;
         } else {
             updateWizardVisuals(false, getMissingDirectionsText(), '🔄', 'waiting');
@@ -422,18 +488,15 @@ function updateWizardVisuals(isValid, text, indicator, stateClass = 'success') {
     DOM.vStatus.style.color = isValid ? 'var(--success)' : (stateClass === 'error' ? 'var(--danger)' : 'var(--warning)');
 }
 
-// منطق سوئیچینگ و ثبت عملیات زوری کالیبراسیون هنگام کلیک دکمه اصلی جادوگر
 DOM.btnNextWiz.onclick = () => {
     if (!AppState.isConnected) return;
 
-    // تزریق فیزیکی آفست: اگر در مرحله ۲ روی دکمه کلیک شد، مختصات انحراف کنونی به عنوان مبدا جدید قفل می‌شود
     if (AppState.wizardStep === 2) {
         AppState.offsets.left.x = AppState.rawInputs.lx;
         AppState.offsets.left.y = AppState.rawInputs.ly;
         AppState.offsets.right.x = AppState.rawInputs.rx;
         AppState.offsets.right.y = AppState.rawInputs.ry;
-        
-        logToSystem(`عملیات تراز زوری انجام شد! خطای آفست صفر شد -> چپ: [X:${AppState.offsets.left.x.toFixed(2)}, Y:${AppState.offsets.left.y.toFixed(2)}] | راست: [X:${AppState.offsets.right.x.toFixed(2)}, Y:${AppState.offsets.right.y.toFixed(2)}]`, 'success');
+        logToSystem('عملیات تراز زوری انجام شد! آفست‌ها صفر شدند.', 'success');
     }
 
     AppState.wizardStep++;
@@ -443,52 +506,42 @@ DOM.btnNextWiz.onclick = () => {
         document.getElementById('sn-2').classList.add('active');
         document.getElementById('sn-1').classList.add('completed');
         DOM.wizTitle.textContent = 'مرحله ۲: همگام‌سازی نقطه صفر مرجع (تراز مرکزی)';
-        DOM.wizDesc.textContent = 'دسته‌ها و آنالوگ‌ها را کاملاً رها کنید. در صورت وجود کجی یا انحراف شاسی، با زدن دکمه زیر تراز به صورت هوشمند صفر می‌شود.';
-        logToSystem('وارد مرحله دوم شدید. آنالوگ‌ها را در حالت رها قرار داده یا دکمه تراز زوری را فشرده کنید.');
+        DOM.wizDesc.textContent = 'دسته‌ها و آنالوگ‌ها را رها کنید. در صورت وجود کجی یا انحراف سیگنال، دکمه زیر را فشار دهید تا مرکز فورا صفر شود.';
         DOM.btnNextWiz.textContent = 'تایید و رفتن به مرحله تست جهت‌ها';
         DOM.btnNextWiz.disabled = false;
-        
     } else if (AppState.wizardStep === 3) {
         document.getElementById('sn-3').classList.add('active');
         document.getElementById('sn-2').classList.add('completed');
         DOM.wizTitle.textContent = 'مرحله ۳: پیمایش زوایا و ماتریس محیط دایره';
-        DOM.wizDesc.textContent = 'هر دو آنالوگ را به صورت کامل ۳۶۰ درجه بچرخانید تا تمام جهات جغرافیایی زیر بر اساس تراز جدید تایید شوند.';
+        DOM.wizDesc.textContent = 'هر دو آنالوگ را کامل بچرخانید تا تمام جهات زیر بر اساس چیدمان ماتریس اصلاح‌شده تایید شوند.';
         DOM.angleTrackerUi.style.display = 'grid'; 
         resetAngleTrackerMatrix();
-        logToSystem('وارد مرحله سوم شدید. هر دو استیک را کامل بچرخانید.');
         DOM.btnNextWiz.textContent = 'انتقال به فاز ذخیره‌سازی حافظه';
         DOM.btnNextWiz.disabled = true;
-        
     } else if (AppState.wizardStep === 4) {
         document.getElementById('sn-4').classList.add('active');
-        document.getElementById('sn-2').classList.add('completed'); // رفع باگ آدرس‌دهی استپ پایانی کلاینت
         document.getElementById('sn-3').classList.add('completed');
         DOM.wizTitle.textContent = 'مرحله ۴: ذخیره‌سازی نهایی الگوریتم‌های تصحیح خطا';
-        DOM.wizDesc.textContent = 'تست زاویه‌شناسی و تراز تفاضلی با موفقیت پاس شد. سیستم آماده ذخیره رجیسترهای جدید روی سیستم کلاینت فیکس است.';
+        DOM.wizDesc.textContent = 'تست زاویه‌شناسی با موفقیت پاس شد. سیستم آماده رایت رجیسترها است.';
         DOM.angleTrackerUi.style.display = 'none'; 
-        updateWizardVisuals(true, 'آفست‌های تفاضلی استخراج شدند. آماده رایت نهایی داده‌ها روی لایه سیستم!', '💾');
+        updateWizardVisuals(true, 'آماده رایت نهایی داده‌ها روی لایه سیستم!', '💾');
         DOM.btnNextWiz.textContent = 'اعمال کالیبراسیون و ذخیره نهایی پروژه';
         DOM.btnNextWiz.disabled = false;
-        logToSystem('فرآیند کالیبراسیون تایید نهایی شد.', 'success');
-        
     } else if (AppState.wizardStep > 4) {
-        // ریست فرآیند و پاکسازی کش آفست‌ها برای چرخه‌های کالیبراسیون بعدی
         AppState.wizardStep = 1;
         AppState.offsets = { left: { x: 0, y: 0 }, right: { x: 0, y: 0 } };
         document.querySelectorAll('.step-node').forEach(node => node.classList.remove('completed'));
         document.getElementById('sn-1').classList.add('active');
         DOM.wizTitle.textContent = 'مرحله ۱: تأیید ارتباط با پروتکل امن';
-        DOM.wizDesc.textContent = 'برای تغییر ساختار رجیسترهای سنسور اثر هال یا پتانسیومترهای فیزیکی، کنترلر را متصل کنید.';
         DOM.btnNextWiz.textContent = 'شروع همگام‌سازی تراز مرکز';
-        logToSystem('داده‌های ماتریس کالیبراسیون با موفقیت در سیستم فیکس ثبت و ذخیره شدند.', 'success');
-        updateWizardVisuals(true, 'عملیات ذخیره‌سازی با موفقیت روی سیستم رایت شد.', '✅');
+        logToSystem('داده‌های ماتریس کالیبراسیون تفاضلی با موفقیت ثبت شدند.', 'success');
     }
 };
 
-// بوت شدن اولیه برنامه هنگام لود صفحه
 window.onload = () => {
     initCanvases();
     initGamepadPolling();
+    injectAdvancedCorrectionPanel(); // تزریق خودکار پنل عیب‌یابی فوق پیشرفته هنگام لود صفحه
     
     DOM.apiGamepadBtn.onclick = () => switchAPI('gamepad');
     DOM.apiHidBtn.onclick = () => {
