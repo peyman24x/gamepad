@@ -8,21 +8,21 @@
         @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;700;900&display=swap');
         
         :root {
-            --bg-main: #05070f;
-            --bg-card: #0b0f19;
-            --bg-inner: #121829;
-            --primary: #2563eb;
-            --primary-glow: rgba(37, 99, 235, 0.4);
+            --bg-main: #04060d;
+            --bg-card: #0a0e1a;
+            --bg-inner: #111728;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.3);
             --success: #10b981;
-            --success-glow: rgba(16, 185, 129, 0.4);
+            --success-glow: rgba(16, 185, 129, 0.3);
             --warning: #f59e0b;
-            --warning-glow: rgba(245, 158, 11, 0.4);
+            --warning-glow: rgba(245, 158, 11, 0.3);
             --danger: #ef4444;
-            --danger-glow: rgba(239, 68, 68, 0.4);
+            --danger-glow: rgba(239, 68, 68, 0.3);
             --text-white: #f8fafc;
             --text-dim: #475569;
             --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.05);
         }
 
         * {
@@ -41,12 +41,11 @@
             overflow-x: hidden;
         }
 
-        /* Modern Glassmorphic Header */
         header {
-            background: rgba(11, 15, 25, 0.8);
+            background: rgba(10, 14, 26, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            padding: 18px 40px;
+            padding: 16px 40px;
             border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
@@ -54,11 +53,11 @@
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
 
         .header-title h1 {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 900;
             background: linear-gradient(135deg, #ffffff, #93c5fd);
             -webkit-background-clip: text;
@@ -66,30 +65,26 @@
         }
 
         .header-brand a {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 700;
             color: var(--primary);
             text-decoration: none;
-            letter-spacing: 0.5px;
-            transition: all 0.3s ease;
             padding: 6px 14px;
             border-radius: 8px;
-            background: rgba(37, 99, 235, 0.08);
-            border: 1px solid rgba(37, 99, 235, 0.15);
-            text-shadow: 0 0 15px var(--primary-glow);
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            transition: all 0.3s ease;
         }
 
         .header-brand a:hover {
             background: var(--primary);
             color: white;
-            box-shadow: 0 0 25px var(--primary);
-            text-shadow: none;
+            box-shadow: 0 0 20px var(--primary);
         }
 
-        /* Layout Grid */
         .app-layout {
             max-width: 1500px;
-            margin: 30px auto;
+            margin: 25px auto;
             padding: 0 20px;
             display: grid;
             grid-template-columns: 1fr;
@@ -98,50 +93,28 @@
 
         @media (min-width: 1200px) {
             .app-layout {
-                grid-template-columns: 380px 1fr;
+                grid-template-columns: 360px 1fr;
             }
         }
 
-        /* Reusable Cards */
         .card {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: 16px;
             padding: 24px;
-            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             position: relative;
-            overflow: hidden;
-            transition: opacity 0.4s ease, filter 0.4s ease;
         }
 
-        /* State Indicator for Disconnection */
-        .device-dependent {
-            position: relative;
-        }
-        
         body.disconnected .device-dependent {
-            opacity: 0.4;
+            opacity: 0.35;
             pointer-events: none;
             filter: grayscale(0.8);
-        }
-
-        body.disconnected .device-dependent::before {
-            content: '⚠️ در انتظار اتصال سخت‌افزار...';
-            position: absolute;
-            top: 15px;
-            left: 20px;
-            background: rgba(239, 68, 68, 0.15);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #f87171;
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-size: 11px;
-            font-weight: bold;
-            z-index: 10;
+            transition: all 0.4s ease;
         }
 
         .card-title {
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 700;
             margin-bottom: 20px;
             padding-bottom: 12px;
@@ -151,14 +124,13 @@
             justify-content: space-between;
         }
 
-        /* Active API Switcher Widget */
         .api-toggle-container {
             background: var(--bg-inner);
             border-radius: 10px;
             padding: 4px;
             display: flex;
             gap: 4px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
             border: 1px solid var(--border);
         }
 
@@ -178,138 +150,139 @@
         .api-btn.active {
             background: var(--primary);
             color: white;
-            box-shadow: 0 4px 15px var(--primary-glow);
-        }
-        
-        .api-btn.active.hid-mode {
-            background: var(--warning);
-            color: #000;
-            box-shadow: 0 4px 15px var(--warning-glow);
+            box-shadow: 0 4px 12px var(--primary-glow);
         }
 
-        /* Hardware Visualizer */
+        /* بخش هوشمند اعلام نیاز به کالیبراسیون و پروتکل متقابل */
+        .api-prompt-box {
+            background: rgba(245, 158, 11, 0.06);
+            border: 1px dashed rgba(245, 158, 11, 0.3);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 12px;
+            color: var(--warning);
+            margin-top: 10px;
+            display: none;
+            line-height: 1.6;
+        }
+
         .gamepad-illustration-card {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 30px;
+            padding: 20px;
             background: var(--bg-inner);
             border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.02);
+            border: 1px solid rgba(255,255,255,0.01);
         }
 
         .gamepad-container {
             position: relative;
-            width: 480px;
-            height: 300px;
-            background: #161e30;
+            width: 460px;
+            height: 290px;
+            background: #141b2b;
             border-radius: 60px 60px 90px 90px;
-            box-shadow: inset 0 8px 20px rgba(255,255,255,0.03), 0 20px 50px rgba(0,0,0,0.6);
-            border: 2px solid #232f4b;
-            transform: scale(0.95);
+            border: 2px solid #202a42;
+            box-shadow: inset 0 8px 16px rgba(255,255,255,0.02), 0 15px 40px rgba(0,0,0,0.5);
         }
 
         .gamepad-container::before, .gamepad-container::after {
             content: '';
             position: absolute;
-            bottom: -25px;
-            width: 95px;
-            height: 155px;
-            background: #161e30;
-            border: 2px solid #232f4b;
+            bottom: -20px;
+            width: 90px;
+            height: 150px;
+            background: #141b2b;
+            border: 2px solid #202a42;
             z-index: -1;
         }
-        .gamepad-container::before { left: -8px; border-radius: 50px 0 40px 90px; transform: rotate(14deg); }
-        .gamepad-container::after { right: -8px; border-radius: 0 50px 90px 40px; transform: rotate(-14deg); }
+        .gamepad-container::before { left: -6px; border-radius: 50px 0 40px 90px; transform: rotate(13deg); }
+        .gamepad-container::after { right: -6px; border-radius: 0 50px 90px 40px; transform: rotate(-13deg); }
 
-        /* Buttons on Schematic Map */
         .g-btn {
             position: absolute;
-            background: #253252;
-            border: 1px solid #364875;
+            background: #202b47;
+            border: 1px solid #31426d;
             color: var(--text-muted);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
-            transition: background 0.05s, transform 0.05s;
         }
 
         .g-btn.active {
             background: var(--success) !important;
             color: white !important;
-            box-shadow: 0 0 15px var(--success-glow);
-            border-color: #22c55e !important;
-            transform: scale(0.95);
+            box-shadow: 0 0 12px var(--success-glow);
+            border-color: #10b981 !important;
         }
 
-        /* Face & Navigation Layouts */
-        .cluster-right { position: absolute; right: 55px; top: 75px; width: 90px; height: 90px; }
+        .cluster-right { position: absolute; right: 50px; top: 70px; width: 90px; height: 90px; }
         .b-triangle { top: 0; left: 32px; width: 26px; height: 26px; }
         .b-circle { top: 32px; right: 0; width: 26px; height: 26px; }
         .b-cross { bottom: 0; left: 32px; width: 26px; height: 26px; }
         .b-square { top: 32px; left: 0; width: 26px; height: 26px; }
 
-        .cluster-left { position: absolute; left: 55px; top: 75px; width: 90px; height: 90px; }
-        .d-up { top: 0; left: 32px; width: 26px; height: 28px; border-radius: 4px; }
-        .d-right { top: 32px; right: 0; width: 28px; height: 26px; border-radius: 4px; }
-        .d-down { bottom: 0; left: 32px; width: 26px; height: 28px; border-radius: 4px; }
-        .d-left { top: 32px; left: 0; width: 28px; height: 26px; border-radius: 4px; }
+        .cluster-left { position: absolute; left: 50px; top: 70px; width: 90px; height: 90px; }
+        .d-up { top: 0; left: 32px; width: 26px; height: 26px; border-radius: 4px; }
+        .d-right { top: 32px; right: 0; width: 26px; height: 26px; border-radius: 4px; }
+        .d-down { bottom: 0; left: 32px; width: 26px; height: 26px; border-radius: 4px; }
+        .d-left { top: 32px; left: 0; width: 26px; height: 26px; border-radius: 4px; }
 
-        /* Joysticks Components */
         .g-stick {
             position: absolute;
-            width: 65px;
-            height: 65px;
-            background: #0f1524;
+            width: 60px;
+            height: 60px;
+            background: #0d121f;
             border-radius: 50%;
-            border: 3px solid #2d3b5c;
-            top: 155px;
+            border: 2px solid #283556;
+            top: 150px;
         }
-        .g-stick-left { left: 135px; }
-        .g-stick-right { right: 135px; }
+        .g-stick-left { left: 130px; }
+        .g-stick-right { right: 130px; }
         
         .g-thumb {
             position: absolute;
-            width: 42px;
-            height: 42px;
-            background: #2b395b;
+            width: 38px;
+            height: 38px;
+            background: #28365a;
             border-radius: 50%;
             top: 9px;
             left: 9px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            transition: transform 0.02s linear;
-            border: 1px solid #3d5080;
+            border: 1px solid #3a4e82;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4);
         }
 
         .shoulder-btn {
             position: absolute;
-            top: -14px;
-            width: 95px;
-            height: 22px;
-            background: #253252;
-            border-radius: 8px 8px 4px 4px;
-            border: 1px solid #364875;
+            top: -12px;
+            width: 90px;
+            height: 20px;
+            background: #202b47;
+            border-radius: 6px 6px 3px 3px;
+            border: 1px solid #31426d;
         }
-        .s-l1 { left: 65px; }
-        .s-r1 { right: 65px; }
+        .s-l1 { left: 60px; }
+        .s-r1 { right: 60px; }
 
-        .b-ps { left: 225px; top: 180px; width: 30px; height: 30px; font-size: 9px; }
-        .b-share { left: 155px; top: 78px; width: 32px; height: 16px; border-radius: 3px; font-size: 8px;}
-        .b-options { right: 155px; top: 78px; width: 32px; height: 16px; border-radius: 3px; font-size: 8px;}
+        .b-ps { left: 215px; top: 175px; width: 30px; height: 30px; font-size: 8px; }
+        .b-share { left: 150px; top: 75px; width: 30px; height: 15px; border-radius: 2px; font-size: 8px; }
+        .b-options { right: 150px; top: 75px; width: 30px; height: 15px; border-radius: 2px; font-size: 8px; }
 
-        /* Canvas Layout Dashboard */
+        /* 🔄 رفع باگ چیدمان افقی: آنالوگ راست در راست و آنالوگ چپ در چپ صفحه */
         .sticks-dashboard {
             display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
-            margin-top: 25px;
+            margin-top: 20px;
         }
         @media (min-width: 768px) {
-            .sticks-dashboard { grid-template-columns: 1fr 1fr; }
+            .sticks-dashboard {
+                grid-template-columns: 1fr 1fr;
+            }
         }
 
         .canvas-container {
@@ -324,12 +297,12 @@
 
         .canvas-frame {
             position: relative;
-            width: 200px;
-            height: 200px;
-            background: #080c14;
+            width: 190px;
+            height: 190px;
+            background: #060912;
             border-radius: 50%;
-            border: 2px solid rgba(255,255,255,0.04);
-            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.03);
+            margin-bottom: 12px;
         }
         canvas { width: 100%; height: 100%; }
 
@@ -344,50 +317,49 @@
             padding: 8px;
             border-radius: 6px;
             text-align: center;
-            font-size: 12px;
+            font-size: 11px;
         }
         .metric-num {
             font-family: monospace;
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 700;
             color: var(--primary);
             margin-top: 4px;
         }
 
-        /* Wizard Validation Module */
+        /* کامپوننت هوشمند جادوگر خودکار */
         .wizard-container {
-            border-left: 4px solid var(--warning);
-            background: linear-gradient(145deg, var(--bg-card), #14192b);
+            border-right: 4px solid var(--warning);
+            background: linear-gradient(145deg, var(--bg-card), #121727);
         }
 
         .wizard-steps-header {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             border-bottom: 1px solid var(--border);
-            padding-bottom: 15px;
+            padding-bottom: 12px;
         }
         .step-node {
             flex: 1;
             text-align: center;
             opacity: 0.25;
+            font-size: 12px;
             transition: all 0.3s;
-            font-size: 13px;
         }
         .step-node.active { opacity: 1; color: var(--warning); font-weight: bold; }
         .step-node.completed { opacity: 0.8; color: var(--success); }
         
         .step-badge {
-            width: 26px;
-            height: 26px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.06);
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto 6px;
             font-weight: bold;
-            font-size: 12px;
         }
         .step-node.active .step-badge { background: var(--warning); color: #000; }
         .step-node.completed .step-badge { background: var(--success); color: white; }
@@ -396,45 +368,82 @@
             display: grid;
             grid-template-columns: 1fr;
             gap: 20px;
-            background: rgba(0,0,0,0.2);
+            background: rgba(0,0,0,0.25);
             padding: 20px;
             border-radius: 12px;
             margin-bottom: 20px;
         }
         @media (min-width: 768px) {
-            .wizard-body { grid-template-columns: 1fr 260px; }
+            .wizard-body { grid-template-columns: 1fr 280px; }
         }
 
-        /* Real-Time Step Correctness Visual Feedback */
         .wizard-graphic-feedback {
-            height: 160px;
-            background: #070b14;
+            min-height: 150px;
+            background: #060911;
             border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.02);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            position: relative;
-            overflow: hidden;
-            padding: 10px;
+            padding: 12px;
+        }
+
+        /* 🎯 لایه راهنمای جهات چرخشی برای رفع باگ مرحله ۳ */
+        .angle-tracker-ui {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .tracker-stick-box {
+            background: rgba(255,255,255,0.02);
+            padding: 6px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .direction-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .dir-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+            background: rgba(255,255,255,0.05);
+            color: var(--text-muted);
+            font-size: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 1px solid rgba(255,255,255,0.02);
+        }
+        .dir-dot.done {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border-color: var(--success);
         }
 
         .validation-status {
             margin-top: 8px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
             text-align: center;
         }
 
         .terminal-box {
-            background: #03050a;
+            background: #020307;
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 12px;
             font-family: monospace;
             font-size: 11px;
-            height: 105px;
+            height: 100px;
             overflow-y: auto;
             color: #38bdf8;
             margin-top: 15px;
@@ -453,42 +462,34 @@
         }
         .btn-action:hover { opacity: 0.95; }
         .btn-wiz-next { background: var(--warning); color: #000; }
-        .btn-wiz-next:hover { box-shadow: 0 0 15px var(--warning-glow); }
-
-        /* Animation Helpers */
-        .pulse-circle {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--warning);
-            border-radius: 50%;
-            animation: pulse 1.4s infinite ease-in-out;
-        }
-        @keyframes pulse {
-            0% { transform: scale(0.6); opacity: 1; }
-            100% { transform: scale(1.5); opacity: 0; }
+        .btn-wiz-next:disabled {
+            opacity: 0.35 !important;
+            cursor: not-allowed;
+            background: #2d3748 !important;
+            color: var(--text-muted) !important;
+            box-shadow: none !important;
         }
 
         .correctness-indicator {
-            width: 55px;
-            height: 55px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 20px;
             font-weight: bold;
-            transition: all 0.3s ease;
         }
-        .correctness-indicator.waiting { background: rgba(245, 158, 11, 0.1); color: var(--warning); border: 2px dashed var(--warning); }
-        .correctness-indicator.success { background: rgba(16, 185, 129, 0.1); color: var(--success); border: 2px solid var(--success); box-shadow: 0 0 15px var(--success-glow); }
-        .correctness-indicator.error { background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 2px solid var(--danger); }
+        .correctness-indicator.waiting { background: rgba(245, 158, 11, 0.08); color: var(--warning); border: 2px dashed var(--warning); }
+        .correctness-indicator.success { background: rgba(16, 185, 129, 0.08); color: var(--success); border: 2px solid var(--success); box-shadow: 0 0 12px var(--success-glow); }
+        .correctness-indicator.error { background: rgba(239, 68, 68, 0.08); color: var(--danger); border: 2px solid var(--danger); }
     </style>
 </head>
 <body class="disconnected">
 
     <header>
         <div class="header-title">
-            <h1>سامانه هوشمند تست و کالیبراسیون</h1>
+            <h1>سامانه هوشمند تست و کالیبراسیون سخت‌افزار</h1>
         </div>
         <div class="header-brand">
             <a href="https://Fix.Peyman24x.ir" target="_blank">Fix.Peyman24x.ir</a>
@@ -500,8 +501,8 @@
         <div style="display: flex; flex-direction: column; gap: 25px;">
             <div class="card">
                 <div class="card-title">
-                    <span>موتور ارتباطی و پروتکل سخت‌افزار</span>
-                    <span id="activeApiBadge" style="font-size:11px; padding:2px 8px; border-radius:4px; background:rgba(255,255,255,0.05); color:var(--text-muted);">عدم شناسایی</span>
+                    <span>پروتکل ارتباطی سخت‌افزار</span>
+                    <span id="activeApiBadge" style="font-size:10px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.05); color:var(--text-muted);">عدم شناسایی</span>
                 </div>
                 
                 <div class="api-toggle-container">
@@ -509,24 +510,28 @@
                     <button class="api-btn" id="apiHidBtn">Low-Level WebHID</button>
                 </div>
 
-                <div style="background: rgba(0,0,0,0.2); padding: 14px; border-radius: 8px; font-size: 13px; margin-bottom: 10px;">
+                <div style="background: rgba(0,0,0,0.2); padding: 14px; border-radius: 8px; font-size: 12px; margin-bottom: 5px;">
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <span>وضعیت سخت‌افزار:</span>
+                        <span>وضعیت اتصال:</span>
                         <span id="connStatus" style="color:var(--danger); font-weight:bold;">قطع اتصال</span>
                     </div>
                     <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-                        <span>سطح باطری کنترلر:</span>
-                        <span id="batteryLevel" style="color:var(--text-muted); font-family: monospace;">--</span>
+                        <span>میزان شارژ باطری:</span>
+                        <span id="batteryLevel" style="color:var(--text-muted); font-family: monospace; font-weight: bold;">--</span>
                     </div>
                     <div style="display:flex; justify-content:space-between;">
-                        <span>وضعیت منبع تغذیه:</span>
+                        <span>منبع تغذیه الکتریکی:</span>
                         <span id="batteryCharging" style="color:var(--text-muted);">مشخص نیست</span>
                     </div>
                 </div>
 
+                <div class="api-prompt-box" id="batteryApiPrompt">
+                    ⚠️ <strong>عدم پشتیبانی پروتکل فعلی:</strong> اطلاعات سطح شارژ دقیق و منبع تغذیه الکتریکی در این حالت در دسترس نیست. لطفا برای دسترسی به پکت‌های خام فریمور، روی دکمه <strong>Low-Level WebHID</strong> کلیک کنید.
+                </div>
+
                 <div class="terminal-box" id="sysLog">
-                    [سیستم] سیستم هوشمند Fix آماده دریافت سیگنال است.
-[سیستم] برای شروع فرآیند، کنترلر خود را متصل کرده و یکی از دکمه‌ها را فشار دهید.
+[سیستم] هسته مرکزی Fix آماده دریافت کابل سخت‌افزار است.
+[سیستم] برای شروع فرآیند، کنترلر را متصل کرده و دکمه‌ای را فشار دهید.
                 </div>
             </div>
         </div>
@@ -569,8 +574,18 @@
                 </div>
 
                 <div class="sticks-dashboard">
+                    
                     <div class="canvas-container">
-                        <div style="font-size: 13px; font-weight: bold; margin-bottom: 10px; color: var(--text-muted);">بردار آنالوگ چپ (مختصات خطی)</div>
+                        <div style="font-size: 12px; font-weight: bold; margin-bottom: 10px; color: var(--text-muted);">بردار آنالوگ راست (مختصات خطی)</div>
+                        <div class="canvas-frame"><canvas id="cRight"></canvas></div>
+                        <div class="metric-row">
+                            <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-r-coords">0.00 / 0.00</div></div>
+                            <div class="metric-item">خطای هندسی دایره<div class="metric-num" style="color:var(--success);" id="md-re">0.00%</div></div>
+                        </div>
+                    </div>
+
+                    <div class="canvas-container">
+                        <div style="font-size: 12px; font-weight: bold; margin-bottom: 10px; color: var(--text-muted);">بردار آنالوگ چپ (مختصات خطی)</div>
                         <div class="canvas-frame"><canvas id="cLeft"></canvas></div>
                         <div class="metric-row">
                             <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-l-coords">0.00 / 0.00</div></div>
@@ -578,31 +593,23 @@
                         </div>
                     </div>
 
-                    <div class="canvas-container">
-                        <div style="font-size: 13px; font-weight: bold; margin-bottom: 10px; color: var(--text-muted);">بردار آنالوگ راست (مختصات خطی)</div>
-                        <div class="canvas-frame"><canvas id="cRight"></canvas></div>
-                        <div class="metric-row">
-                            <div class="metric-item">مختصات X / Y<div class="metric-num" id="md-r-coords">0.00 / 0.00</div></div>
-                            <div class="metric-item">خطای هندسی دایره<div class="metric-num" style="color:var(--success);" id="md-re">0.00%</div></div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
             <div class="card wizard-container device-dependent">
-                <div class="card-title" style="color: var(--warning);">جادوگر خودکار کالیبراسیون و رفع دیستورشن سخت‌افزاری آنالوگ‌ها</div>
+                <div class="card-title" style="color: var(--warning);">جادوگر کالیبراسیون و همگام‌سازی رجیسترهای سخت‌افزار</div>
                 
                 <div class="wizard-steps-header">
                     <div class="step-node active" id="sn-1"><div class="step-badge">۱</div>اتصال پورت</div>
-                    <div class="step-node" id="sn-2"><div class="step-badge">۲</div>تراز صفر مرجع</div>
+                    <div class="step-node" id="sn-2"><div class="step-badge">۲</div>تراز مرکز</div>
                     <div class="step-node" id="sn-3"><div class="step-badge">۳</div>پیمایش زوایا</div>
                     <div class="step-node" id="sn-4"><div class="step-badge">۴</div>ذخیره نهایی</div>
                 </div>
 
                 <div class="wizard-body">
                     <div style="display: flex; flex-direction: column; justify-content: center;">
-                        <h3 id="wizTitle" style="font-size:15px; margin-bottom:10px; color:#fff;">مرحله ۱: تأیید ارتباط با پروتکل امن</h3>
-                        <p id="wizDesc" style="font-size:13px; color:var(--text-muted); line-height:1.7;">
+                        <h3 id="wizTitle" style="font-size:14px; margin-bottom:8px; color:#fff;">مرحله ۱: تأیید ارتباط با پروتکل امن</h3>
+                        <p id="wizDesc" style="font-size:12px; color:var(--text-muted); line-height:1.7;">
                             برای تغییر ساختار رجیسترهای سنسور اثر هال یا پتانسیومترهای فیزیکی، کنترلر را متصل کنید. در این فاز سیستم در حال راستی‌آزمایی نرخ داده‌های دریافتی جهت اعمال تصحیح ماتریسی است.
                         </p>
                     </div>
@@ -610,13 +617,35 @@
                     <div>
                         <div class="wizard-graphic-feedback" id="wizGraphic">
                             <div class="correctness-indicator waiting" id="vIndicator">⏳</div>
+                            
+                            <div class="angle-tracker-ui" id="angleTrackerUi" style="display: none;">
+                                <div class="tracker-stick-box">
+                                    <span>آنالوگ چپ</span>
+                                    <div class="direction-indicators">
+                                        <div class="dir-dot" id="l-dir-n">ش</div>
+                                        <div class="dir-dot" id="l-dir-e">ق</div>
+                                        <div class="dir-dot" id="l-dir-s">ج</div>
+                                        <div class="dir-dot" id="l-dir-w">غ</div>
+                                    </div>
+                                </div>
+                                <div class="tracker-stick-box">
+                                    <span>آنالوگ راست</span>
+                                    <div class="direction-indicators">
+                                        <div class="dir-dot" id="r-dir-n">ش</div>
+                                        <div class="dir-dot" id="r-dir-e">ق</div>
+                                        <div class="dir-dot" id="r-dir-s">ج</div>
+                                        <div class="dir-dot" id="r-dir-w">غ</div>
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                         <div class="validation-status" id="vStatus" style="color: var(--warning);">در انتظار شروع عملیات...</div>
                     </div>
                 </div>
 
                 <div style="display: flex; gap: 12px;">
-                    <button class="btn-action btn-wiz-next" id="btnNextWiz">شروع همگام‌سازی تراز مرکز</button>
+                    <button class="btn-action btn-wiz-next" id="btnNextWiz" disabled>شروع همگام‌سازی تراز مرکز</button>
                 </div>
             </div>
 
